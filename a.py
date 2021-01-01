@@ -4,7 +4,6 @@
 TODO:
 	- check for editing ability?
 	- catch error of broken cookies?
-	- switch to utaitedb, touhoudb
 	- unintelligent matching of an album to a playlist. the album has 10 tracks, the playlist has 10 tracks, we are golden
 
 PATH FROM HERE:
@@ -29,7 +28,7 @@ import youtube_dl
 import argparse
 import json
 
-# XXX: what can i call this script? 'SC'ript is obviously not good
+# XXX: what can i call this script? 'SC'ript and 'a.py' are obviously terrible names
 # XXX: is this how classes work?
 class SCPvTypes:
 	ORIGINAL = 'Original'
@@ -217,9 +216,7 @@ def process_urls() -> None:
 			
 			print_p(request.json()['matches'])
 
-			if input('Is the first match correct? [Y/n]').casefold() == 'n':
-				pass # XXX
-			else:
+			if request.json()['matches'] and input('Is the first match correct? [Y/n]').casefold() != 'n':
 				song_id = request.json()['matches'][0]['entry']['id']
 				pv_type = SC.pv_types.REPRINT
 
@@ -228,13 +225,13 @@ def process_urls() -> None:
 						if entry['artistType'] == 'Producer':
 							pv_type = SC.pv_types.ORIGINAL
 
-				if input(f'Is the PV type {pv_type}? [Y/n]').casefold() == 'n':
+				if input(f'Is the PV type {pv_type}? [Y/n]').casefold() != 'n':
+					pass
+				else:
 					try:
 						pv_type = SC.pv_types.list[int(input(str(SC.pv_types.list) + ' [1/2/3]: ')) - 1]
 					except:
 						print(f'{colorama.Fore.RED}Not a valid answer;{colorama.Fore.RESET} continuing as before')
-				else:
-					pass
 
 				# undocumented api
 				request_entry_data = session.get(
@@ -265,6 +262,9 @@ def process_urls() -> None:
 				if request_save.status_code == 200:
 					print(f'{colorama.Fore.GREEN}Success')
 
+				break
+			else:
+				print(f'{colorama.Fore.RED}TODO: ask again') # TODO
 				break
 
 def recursive_get_ytdl_individual_info(info) -> list:

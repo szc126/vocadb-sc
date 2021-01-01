@@ -5,6 +5,7 @@ TODO:
 	- check for editing ability?
 	- catch error of broken cookies?
 	- switch to utaitedb, touhoudb
+	- unintelligent matching of an album to a playlist. the album has 10 tracks, the playlist has 10 tracks, we are golden
 
 PATH FROM HERE:
 	- check if the url was already registered in the database
@@ -26,12 +27,22 @@ import colorama
 import pickle
 import youtube_dl
 import argparse
+import json
 
 # XXX: what can i call this script? 'SC'ript is obviously not good
 # XXX: is this how classes work?
+class SCPvTypes:
+	ORIGINAL = 'Original'
+	REPRINT = 'Reprint'
+	OTHER = 'Other'
+
+	@property
+	def list(self):
+		return [self.ORIGINAL, self.REPRINT, self.OTHER]
 class SC:
 	server = 'vocadb.net'
 	urls = []
+	pv_types = SCPvTypes()
 
 	@property
 	def h_server(self):
@@ -156,7 +167,7 @@ def process_urls() -> None:
 	# for debug: dump the info of a selected item
 	#print_p(infos[int(input())])
 
-	infos_not_added = []
+	infos_working = []
 	for info in infos:
 		print(info['title'])
 		print(info['webpage_url'])
@@ -166,30 +177,99 @@ def process_urls() -> None:
 		info.pop('requested_formats', None)
 		info.pop('thumbnails', None)
 
-		# undocumented API
+		# undocumented api
 		# https://vocadb.net/Song/Create?PVUrl=$foo
 		request = session.get(
 			f'{SC.h_server}/api/songs/findDuplicate',
 			params = {
+				'term': {}, # names
 				'pv': info['webpage_url'],
 				'getPVInfo': True,
 			}
 		)
 
 		# for debug: dump request
-		print_p(request.json())
+		#print(request.url)
+		#print_p(request.json())
 
+		pv_added = False
 		if request.json()['matches']:
-			print(f'{colorama.Fore.GREEN}This PV has already been added to the database.')
+			for entry in request.json()['matches']:
+				if entry['matchProperty'] == 'PV':
+					pv_added = True
+		if pv_added:
+				print(f'{colorama.Fore.GREEN}This PV has already been added to the database.')
+				print()
+		else:
+			infos_working.append((info, request))
+			print(f'{colorama.Fore.RED}This PV has not been added to the database yet.')
 			print()
-			continue
 
-		infos_not_added.append(info)
-		print(f'{colorama.Fore.RED}This PV has not been added to the database yet.')
-		print()
+	print()
+	print('----')
+	print()
+
+	for info, request in infos_working:
+		while True:
+			print(info['title'])
+			print(info['uploader'])
+			print(info['webpage_url'])
+			
+			print_p(request.json()['matches'])
+
+			if input('Is the first match correct? [Y/n]').casefold() == 'n':
+				pass # XXX
+			else:
+				song_id = request.json()['matches'][0]['entry']['id']
+				pv_type = SC.pv_types.REPRINT
+
+				if request.json()['artists']:
+					for entry in request.json()['artists']:
+						if entry['artistType'] == 'Producer':
+							pv_type = SC.pv_types.ORIGINAL
+
+				if input(f'Is the PV type {pv_type}? [Y/n]').casefold() == 'n':
+					try:
+						pv_type = SC.pv_types.list[int(input(str(SC.pv_types.list) + ' [1/2/3]: ')) - 1]
+					except:
+						print(f'{colorama.Fore.RED}Not a valid answer;{colorama.Fore.RESET} continuing as before')
+				else:
+					pass
+
+				# undocumented api
+				request_entry_data = session.get(
+					f'{SC.h_server}/api/songs/{song_id}/for-edit'
+				)
+
+				# undocumented api
+				request_pv_data = session.get(
+					f'{SC.h_server}/api/pvs',
+					params = {
+						'pvUrl': info['webpage_url'],
+						'type': pv_type,
+					}
+				)
+
+				entry_data_modified = request_entry_data.json()
+				entry_data_modified['pvs'].append(request_pv_data.json())
+				entry_data_modified['updatenotes'] = f'Batch addition of PV: {pv_type}, {info["webpage_url"]}'
+
+				# undocumented not-api
+				request_save = session.post(
+					f'{SC.h_server}/Song/Edit/{song_id}',
+					{
+						'EditedSong': json.dumps(entry_data_modified),
+					}
+				)
+
+				if request_save.status_code == 200:
+					print(f'{colorama.Fore.GREEN}Success')
+
+				break
 
 def recursive_get_ytdl_individual_info(info) -> list:
 	'''Helper for flattening nested youtube-dl playlists.'''
+	# example: giving youtube-dl a YouTube channel
 
 	if '_type' in info and info['_type'] == 'playlist':
 		ret = []
@@ -230,7 +310,7 @@ if __name__ == '__main__':
 	)
 	parser.add_argument(
 		'urls',
-		nargs = argparse.REMAINDER,
+		nargs = argparse.REMAINDER, # for yt links that begin with hyphens
 		metavar = 'URL',
 		help = 'A URL(s) to process. If not given here, you will be prompted for a list.',
 	)

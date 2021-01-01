@@ -27,6 +27,7 @@ import pickle
 import youtube_dl
 import argparse
 import json
+import prompt_toolkit
 
 # XXX: what can i call this script? 'SC'ript and 'a.py' are obviously terrible names
 # XXX: is this how classes work?
@@ -168,8 +169,9 @@ def process_urls() -> None:
 
 	infos_working = []
 	for info in infos:
-		print(info['title'])
-		print(info['webpage_url'])
+		print(colorama.Fore.CYAN + info['title'])
+		print(colorama.Fore.CYAN + info['uploader'])
+		print(colorama.Fore.CYAN + info['webpage_url'])
 
 		# for debug: we don't need direct download urls
 		info.pop('formats', None)
@@ -181,7 +183,7 @@ def process_urls() -> None:
 		request = session.get(
 			f'{SC.h_server}/api/songs/findDuplicate',
 			params = {
-				'term': {}, # names
+				'term': None, # names
 				'pv': info['webpage_url'],
 				'getPVInfo': True,
 			}
@@ -204,19 +206,19 @@ def process_urls() -> None:
 			print(f'{colorama.Fore.RED}This PV has not been added to the database yet.')
 			print()
 
-	print()
 	print('----')
 	print()
 
 	for info, request in infos_working:
 		while True:
-			print(info['title'])
-			print(info['uploader'])
-			print(info['webpage_url'])
-			
-			print_p(request.json()['matches'])
+			print(colorama.Fore.CYAN + info['title'])
+			print(colorama.Fore.CYAN + info['uploader'])
+			print(colorama.Fore.CYAN + info['webpage_url'])
 
-			if request.json()['matches'] and input('Is the first match correct? [Y/n]').casefold() != 'n':
+			print_p(request.json()['matches'])
+			print()
+
+			if request.json()['matches'] and input('Is the first match correct? [Y/n] ').casefold() != 'n':
 				song_id = request.json()['matches'][0]['entry']['id']
 				pv_type = SC.pv_types.REPRINT
 
@@ -225,7 +227,7 @@ def process_urls() -> None:
 						if entry['artistType'] == 'Producer':
 							pv_type = SC.pv_types.ORIGINAL
 
-				if input(f'Is the PV type {pv_type}? [Y/n]').casefold() != 'n':
+				if input(f'Is the PV type {pv_type}? [Y/n] ').casefold() != 'n':
 					pass
 				else:
 					try:
@@ -264,8 +266,17 @@ def process_urls() -> None:
 
 				break
 			else:
-				print(f'{colorama.Fore.RED}TODO: ask again') # TODO
-				break
+				print(f'{colorama.Fore.YELLOW}Match not found')
+				# undocumented api
+				# https://vocadb.net/Song/Create?PVUrl=$foo
+				request = session.get(
+					f'{SC.h_server}/api/songs/findDuplicate',
+					params = {
+						'term': prompt_toolkit.prompt('Search by name: ', default = request.json()['title']),
+						'pv': info['webpage_url'],
+						'getPVInfo': True,
+					}
+				)
 
 def recursive_get_ytdl_individual_info(info) -> list:
 	'''Helper for flattening nested youtube-dl playlists.'''

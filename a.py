@@ -147,6 +147,10 @@ def load_cookies() -> bool:
 		return True
 	except FileNotFoundError:
 		print_e(f'{colorama.Fore.RED}Cookies not found')
+		return False
+	except pickle.UnpicklingError:
+		print_e(f'{colorama.Fore.RED}Failed to decode cookies')
+		return False
 
 # ----
 
@@ -171,9 +175,6 @@ def process_urls() -> None:
 			infos = infos + recursive_get_ytdl_individual_info(info)
 		print()
 
-	# for debug: dump the info of a selected item
-	#print_p(infos[int(input())])
-
 	infos_working = []
 	for info in infos:
 		print(colorama.Fore.CYAN + info['title'])
@@ -183,6 +184,9 @@ def process_urls() -> None:
 		info.pop('formats', None)
 		info.pop('requested_formats', None)
 		info.pop('thumbnails', None)
+
+		# for debug: print the info
+		print_p(info)
 
 		# undocumented api
 		# https://vocadb.net/Song/Create?PVUrl=$foo
@@ -211,6 +215,7 @@ def process_urls() -> None:
 		else:
 			infos_working.append((info, request))
 			print(f'This PV {colorama.Fore.RED}has not been added {colorama.Fore.RESET}to the database yet.')
+			print(f'Add it? {SC.h_server}/Song/Create?PVUrl={info["webpage_url"]}')
 			print()
 
 	print('----')
@@ -305,6 +310,7 @@ def process_urls() -> None:
 				# https://vocadb.net/Song/Create?PVUrl=$foo
 				i = prompt_toolkit.prompt('Search by name, or enter "." to abort: ', default = request.json()['title'])
 				if i == '.':
+					print(f'{colorama.Fore.RED}Aborted')
 					break
 				request = session.get(
 					f'{SC.h_server}/api/songs/findDuplicate',
@@ -314,7 +320,6 @@ def process_urls() -> None:
 						'getPVInfo': True,
 					}
 				)
-				print(f'{colorama.Fore.RED}Aborted')
 
 def recursive_get_ytdl_individual_info(info) -> list:
 	'''Helper for flattening nested youtube-dl playlists.'''
@@ -335,12 +340,12 @@ def main(server = None, urls = None, pv_type = None, playliststart = None, playl
 	SC.urls = urls or SC.urls
 	SC.pv_type = pv_type or SC.pv_type
 
-	ytdl_config['playliststart'] = playliststart
-	ytdl_config['playlistend'] = playlistend
+	if playliststart:
+		ytdl_config['playliststart'] = playliststart
+	if playlistend:
+		ytdl_config['playlistend'] = playlistend
 
-	load_cookies()
-
-	if not verify_login_status(exception = False):
+	if not load_cookies():
 		login()
 		verify_login_status(exception = True)
 		save_cookies()

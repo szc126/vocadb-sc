@@ -5,7 +5,6 @@ TODO:
 	- check for editing ability?
 	- catch error of broken cookies?
 	- unintelligent matching of an album to a playlist. the album has 10 tracks, the playlist has 10 tracks, we are golden
-	- cache youtube_dl extracted info
 	- cache 'already added pv'
 
 PATH FROM HERE:
@@ -30,6 +29,7 @@ import youtube_dl
 import argparse
 import json
 import prompt_toolkit
+from disk_cache_decorator import disk_cache_decorator
 
 # XXX: what can i call this script? 'SC'ript and 'a.py' are obviously terrible names
 # XXX: is this how classes work?
@@ -41,12 +41,32 @@ class SCPvTypes:
 	@property
 	def list(self):
 		return [self.ORIGINAL, self.REPRINT, self.OTHER]
+class SCUserGroupIds:
+	NOTHING = 0
+	LIMITED = 1
+	REGULAR = 2
+	TRUSTED = 3
+	MOD = 4
+	ADMIN = 5
+
+	def from_str(self, string):
+		return {
+			'Nothing': self.NOTHING,
+			'Limited': self.LIMITED,
+			'Regular': self.REGULAR,
+			'Trusted': self.TRUSTED,
+			'Mod': self.MOD,
+			'Admin': self.ADMIN,
+		}[string]
 class SC:
 	server = 'vocadb.net'
 	urls = []
 	pv_type = 2
 
+	user_group_id = 0
+
 	pv_types = SCPvTypes()
+	user_group_ids = SCUserGroupIds()
 
 	@property
 	def h_server(self):
@@ -111,7 +131,9 @@ def login() -> bool:
 	return True
 
 def verify_login_status(exception = True) -> bool:
-	'''Check if we are logged in to **DB.'''
+	'''Check if we are logged in to **DB.
+
+	Record user group ID.'''
 
 	print_e(f'Verifying login status for {colorama.Fore.CYAN}{SC.server}')
 	request = session.get(
@@ -124,13 +146,15 @@ def verify_login_status(exception = True) -> bool:
 			print_e(f'{colorama.Fore.RED}Verification failed')
 			return False
 
+	SC.user_group_id = SC.user_group_ids.from_str(request.json()['groupId'])
+
 	print_e(f'{colorama.Fore.GREEN}Logged in{colorama.Fore.RESET} as {colorama.Fore.CYAN}' + request.json()['name'])
 	return True
 
 def save_cookies() -> bool:
 	'''Save cookies to disk.'''
 
-	filename = sys.argv[0] + '.cookies.txt'
+	filename = sys.argv[0] + '.cookies.pickle'
 	with open(filename, 'wb') as file:
 		pickle.dump(session.cookies, file)
 	print_e(f'{colorama.Fore.GREEN}Cookies saved{colorama.Fore.RESET} to {colorama.Fore.CYAN}{filename}')
@@ -140,7 +164,7 @@ def load_cookies() -> bool:
 	'''Load cookies from disk.'''
 
 	try:
-		filename = sys.argv[0] + '.cookies.txt'
+		filename = sys.argv[0] + '.cookies.pickle'
 		with open(filename, 'rb') as file:
 			session.cookies.update(pickle.load(file))
 		print_e(f'{colorama.Fore.GREEN}Cookies loaded{colorama.Fore.RESET} from {colorama.Fore.CYAN}{filename}')
@@ -162,16 +186,19 @@ def collect_urls() -> None:
 		i = input()
 		if i == '.':
 			break
+		if i.strip() == '' or i.startswith('#'):
+			continue
 		SC.urls.append(i)
 
 def process_urls() -> None:
 	''''''
 
 	infos = []
-	print('Fetching video information')
+	print_e('Fetching video information')
 	with youtube_dl.YoutubeDL(ytdl_config) as ytdl:
 		for url in SC.urls:
-			info = ytdl.extract_info(url)
+			filename_pickle = sys.argv[0] + '.ytdl_extract_info.' + (str('playliststart' in ytdl_config and ytdl_config['playliststart'] or '')) + '-' + (str('playlistend' in ytdl_config and ytdl_config['playlistend'] or '')) + '.pickle' # ytdl_config differences are invisible to disk_cache_decorator()
+			info = disk_cache_decorator(filename_pickle)(ytdl.extract_info)(url)
 			infos = infos + recursive_get_ytdl_individual_info(info)
 		print()
 
@@ -186,7 +213,7 @@ def process_urls() -> None:
 		info.pop('thumbnails', None)
 
 		# for debug: print the info
-		print_p(info)
+		#print_p(info)
 
 		# undocumented api
 		# https://vocadb.net/Song/Create?PVUrl=$foo
@@ -215,20 +242,20 @@ def process_urls() -> None:
 		else:
 			infos_working.append((info, request))
 			print(f'This PV {colorama.Fore.RED}has not been added {colorama.Fore.RESET}to the database yet.')
-			print(f'Add it? {SC.h_server}/Song/Create?PVUrl={info["webpage_url"]}')
+			print(f'Add it? {colorama.Fore.CYAN}{SC.h_server}/Song/Create?PVUrl={info["webpage_url"]}')
 			print()
 
 	print('----')
 
 	for info, request in infos_working:
 		while True:
+			print()
 			print(colorama.Fore.CYAN + info['title'])
 			print(colorama.Fore.CYAN + info['uploader'])
 			print(colorama.Fore.CYAN + info['webpage_url'])
-			print()
-			print(colorama.Fore.CYAN + info['description'])
+			print('----')
+			print(colorama.Fore.CYAN + (info['description'] or {colorama.Fore.RESET} + '<no description>'))
 
-			print()
 			for i in range(len(request.json()['matches'])):
 				print(f'{colorama.Fore.YELLOW}{i + 1}')
 				print_p(request.json()['matches'][i]['entry'])
@@ -276,6 +303,11 @@ def process_urls() -> None:
 					f'{SC.h_server}/api/songs/{song_id}/for-edit'
 				)
 
+				if request_entry_data.json()['status'] == 'Approved':
+					if SC.user_group_id < SC.user_group_ids.TRUSTED:
+						print(f'{colorama.Fore.YELLOW}This entry is approved. You do not have the permissions to edit it.')
+						break
+
 				# undocumented api
 				request_pv_data = session.get(
 					f'{SC.h_server}/api/pvs',
@@ -287,7 +319,7 @@ def process_urls() -> None:
 
 				entry_data_modified = request_entry_data.json()
 				entry_data_modified['pvs'].append(request_pv_data.json())
-				entry_data_modified['updatenotes'] = f'Batch addition of PV: {pv_type}, {info["webpage_url"]}'
+				entry_data_modified['updateNotes'] = f'Batch addition of PV: {pv_type}, {info["webpage_url"]}'
 
 				# undocumented not-api
 				request_save = session.post(
@@ -340,12 +372,15 @@ def main(server = None, urls = None, pv_type = None, playliststart = None, playl
 	SC.urls = urls or SC.urls
 	SC.pv_type = pv_type or SC.pv_type
 
+	# youtube-dl won't accept None or False, complicating everything
 	if playliststart:
 		ytdl_config['playliststart'] = playliststart
 	if playlistend:
 		ytdl_config['playlistend'] = playlistend
 
-	if not load_cookies():
+	if load_cookies():
+		verify_login_status(exception = True)
+	else:
 		login()
 		verify_login_status(exception = True)
 		save_cookies()
@@ -370,7 +405,7 @@ if __name__ == '__main__':
 		'--pvtype',
 		dest = 'pv_type',
 		type = int,
-		help = str(SC.pv_types.list) + ': 1, 2, 3',
+		help = 'Default PV type. ' + str(SC.pv_types.list) + ': 1, 2, 3',
 	)
 	parser.add_argument(
 		'--playliststart',
@@ -386,9 +421,11 @@ if __name__ == '__main__':
 	)
 	parser.add_argument(
 		'urls',
-		nargs = argparse.REMAINDER, # for yt links that begin with hyphens
+		nargs = '*',
 		metavar = 'URL',
 		help = 'A URL(s) to process. If not given here, you will be prompted for a list.',
+		# use '--' before an URL that begins with a hyphen
+		# https://docs.python.org/dev/library/argparse.html#arguments-containing
 	)
 	args = parser.parse_args()
 

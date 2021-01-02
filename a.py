@@ -5,6 +5,7 @@ TODO:
 	- check for editing ability?
 	- catch error of broken cookies?
 	- unintelligent matching of an album to a playlist. the album has 10 tracks, the playlist has 10 tracks, we are golden
+	- cache youtube_dl extracted info
 
 PATH FROM HERE:
 	- check if the url was already registered in the database
@@ -42,6 +43,8 @@ class SCPvTypes:
 class SC:
 	server = 'vocadb.net'
 	urls = []
+	pv_type = 2
+
 	pv_types = SCPvTypes()
 
 	@property
@@ -58,10 +61,12 @@ session.headers.update({
 
 colorama.init(autoreset = True)
 
-ytdl = youtube_dl.YoutubeDL({
+ytdl_config = {
 	'usenetrc': True,
 	'simulate': True,
-})
+	#'playliststart': SC.playliststart, # this part is run before main(), so user argument is not (cannot be) used
+	#'playlistend': SC.playlistend,
+}
 
 def print_e(*args, **kwargs):
 	'''Print to standard error.'''
@@ -159,10 +164,11 @@ def process_urls() -> None:
 
 	infos = []
 	print('Fetching video information')
-	for url in SC.urls:
-		info = ytdl.extract_info(url)
-		infos = infos + recursive_get_ytdl_individual_info(info)
-	print()
+	with youtube_dl.YoutubeDL(ytdl_config) as ytdl:
+		for url in SC.urls:
+			info = ytdl.extract_info(url)
+			infos = infos + recursive_get_ytdl_individual_info(info)
+		print()
 
 	# for debug: dump the info of a selected item
 	#print_p(infos[int(input())])
@@ -170,7 +176,6 @@ def process_urls() -> None:
 	infos_working = []
 	for info in infos:
 		print(colorama.Fore.CYAN + info['title'])
-		print(colorama.Fore.CYAN + info['uploader'])
 		print(colorama.Fore.CYAN + info['webpage_url'])
 
 		# for debug: we don't need direct download urls
@@ -199,34 +204,56 @@ def process_urls() -> None:
 				if entry['matchProperty'] == 'PV':
 					pv_added = True
 		if pv_added:
-				print(f'{colorama.Fore.GREEN}This PV has already been added to the database.')
+				song_id = request.json()['matches'][0]['entry']['id']
+				print(f'This PV {colorama.Fore.GREEN}has already been added {colorama.Fore.RESET}to the database. {colorama.Fore.CYAN}{SC.h_server}/S/{song_id}')
 				print()
 		else:
 			infos_working.append((info, request))
-			print(f'{colorama.Fore.RED}This PV has not been added to the database yet.')
+			print(f'This PV {colorama.Fore.RED}has not been added {colorama.Fore.RESET}to the database yet.')
 			print()
 
 	print('----')
-	print()
 
 	for info, request in infos_working:
 		while True:
 			print(colorama.Fore.CYAN + info['title'])
 			print(colorama.Fore.CYAN + info['uploader'])
+			print(colorama.Fore.CYAN + info['description'])
 			print(colorama.Fore.CYAN + info['webpage_url'])
 
-			print_p(request.json()['matches'])
+			print()
+			for i in range(len(request.json()['matches'])):
+				print(f'{colorama.Fore.YELLOW}{i + 1}')
+				print_p(request.json()['matches'][i]['entry'])
 			print()
 
-			if request.json()['matches'] and input('Is the first match correct? [Y/n] ').casefold() != 'n':
-				song_id = request.json()['matches'][0]['entry']['id']
-				pv_type = SC.pv_types.REPRINT
+			if request.json()['matches']:
+				print(f'{colorama.Fore.YELLOW}Match potentially found')
 
+				match_n = '0'
+				while True:
+					i = input('Choose match [1/...], or enter "." to abort: ')
+					if i == '.':
+						match_n = '.'
+						break
+					else:
+						print_p(request.json()['matches'][int(i) - 1]['entry'])
+						if input('Is this correct? [Y/n] ').casefold() != 'n':
+							match_n = int(i)
+							break
+				if match_n == '.':
+					break
+
+				song_id = request.json()['matches'][match_n - 1]['entry']['id']
+				pv_type = SC.pv_types.list[SC.pv_type - 1]
+
+				# it is an original pv because the producer was detected as the uploader
 				if request.json()['artists']:
 					for entry in request.json()['artists']:
 						if entry['artistType'] == 'Producer':
 							pv_type = SC.pv_types.ORIGINAL
 
+				
 				if input(f'Is the PV type {pv_type}? [Y/n] ').casefold() != 'n':
 					pass
 				else:
@@ -262,21 +289,28 @@ def process_urls() -> None:
 				)
 
 				if request_save.status_code == 200:
-					print(f'{colorama.Fore.GREEN}Success')
+					print(f'{colorama.Fore.GREEN}Success; {colorama.Fore.CYAN}{SC.h_server}/S/{song_id}')
+				else:
+					print_p(entry_data_modified)
+					raise ValueError(f'Failed to save. HTTP status code {request_save.status_code}')
 
 				break
 			else:
 				print(f'{colorama.Fore.YELLOW}Match not found')
 				# undocumented api
 				# https://vocadb.net/Song/Create?PVUrl=$foo
+				i = prompt_toolkit.prompt('Search by name, or enter "." to abort: ', default = request.json()['title'])
+				if i == '.':
+					break
 				request = session.get(
 					f'{SC.h_server}/api/songs/findDuplicate',
 					params = {
-						'term': prompt_toolkit.prompt('Search by name: ', default = request.json()['title']),
+						'term': i,
 						'pv': info['webpage_url'],
 						'getPVInfo': True,
 					}
 				)
+				print(f'{colorama.Fore.RED}Aborted')
 
 def recursive_get_ytdl_individual_info(info) -> list:
 	'''Helper for flattening nested youtube-dl playlists.'''
@@ -292,9 +326,13 @@ def recursive_get_ytdl_individual_info(info) -> list:
 
 # ----
 
-def main(server = None, urls = None):
+def main(server = None, urls = None, pv_type = None, playliststart = None, playlistend = None):
 	SC.server = server or SC.server
 	SC.urls = urls or SC.urls
+	SC.pv_type = pv_type or SC.pv_type
+
+	ytdl_config['playliststart'] = playliststart
+	ytdl_config['playlistend'] = playlistend
 
 	load_cookies()
 
@@ -320,6 +358,24 @@ if __name__ == '__main__':
 		help = '',
 	)
 	parser.add_argument(
+		'--pvtype',
+		dest = 'pv_type',
+		type = int,
+		help = str(SC.pv_types.list) + ': 1, 2, 3',
+	)
+	parser.add_argument(
+		'--playliststart',
+		dest = 'playliststart',
+		type = int,
+		help = 'youtube-dl: playliststart',
+	)
+	parser.add_argument(
+		'--playlistend',
+		dest = 'playlistend',
+		type = int,
+		help = 'youtube-dl: playlistend',
+	)
+	parser.add_argument(
 		'urls',
 		nargs = argparse.REMAINDER, # for yt links that begin with hyphens
 		metavar = 'URL',
@@ -330,4 +386,7 @@ if __name__ == '__main__':
 	main(
 		server = args.server,
 		urls = args.urls,
+		pv_type = args.pv_type,
+		playliststart = args.playliststart,
+		playlistend = args.playlistend,
 	)

@@ -6,6 +6,7 @@ TODO:
 	- catch error of broken cookies?
 	- unintelligent matching of an album to a playlist. the album has 10 tracks, the playlist has 10 tracks, we are golden
 	- cache youtube_dl extracted info
+	- cache 'already added pv'
 
 PATH FROM HERE:
 	- check if the url was already registered in the database
@@ -218,8 +219,9 @@ def process_urls() -> None:
 		while True:
 			print(colorama.Fore.CYAN + info['title'])
 			print(colorama.Fore.CYAN + info['uploader'])
-			print(colorama.Fore.CYAN + info['description'])
 			print(colorama.Fore.CYAN + info['webpage_url'])
+			print()
+			print(colorama.Fore.CYAN + info['description'])
 
 			print()
 			for i in range(len(request.json()['matches'])):
@@ -230,10 +232,12 @@ def process_urls() -> None:
 			if request.json()['matches']:
 				print(f'{colorama.Fore.YELLOW}Match potentially found')
 
-				match_n = '0'
+				match_n = '1'
 				while True:
 					i = input('Choose match [1/...], or enter "." to abort: ')
-					if i == '.':
+					if i == '':
+						break
+					elif i == '.':
 						match_n = '.'
 						break
 					else:
@@ -244,7 +248,7 @@ def process_urls() -> None:
 				if match_n == '.':
 					break
 
-				song_id = request.json()['matches'][match_n - 1]['entry']['id']
+				song_id = request.json()['matches'][int(match_n) - 1]['entry']['id']
 				pv_type = SC.pv_types.list[SC.pv_type - 1]
 
 				# it is an original pv because the producer was detected as the uploader

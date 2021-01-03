@@ -2,11 +2,13 @@
 
 import pickle
 
-def disk_cache_decorator(filename):
+def disk_cache_decorator(filename, delete_cache = False):
 	def decorator(function):
 		def inner(*args, **kwargs):
 			key = locals()
 			key['function'] = function.__name__ # non-constant memory address is not helpful
+			key.pop('filename')
+			key.pop('delete_cache')
 			key = str(key)
 			value = None
 			pickle_all = {}
@@ -20,7 +22,12 @@ def disk_cache_decorator(filename):
 			except FileNotFoundError: # no file
 				pass
 
-			if key in pickle_all:
+			if delete_cache:
+				pickle_all.pop(key) # delete key
+				with open(filename, 'wb') as file:
+					pickle.dump(pickle_all, file) # write data
+				return value # return data
+			elif key in pickle_all:
 				return pickle_all[key] # return data
 			else:
 				value = function(*args, **kwargs) # perform the original function call and save the result

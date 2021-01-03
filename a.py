@@ -5,7 +5,6 @@ TODO:
 	- check for editing ability?
 	- catch error of broken cookies?
 	- unintelligent matching of an album to a playlist. the album has 10 tracks, the playlist has 10 tracks, we are golden
-	- cache 'already added pv'
 
 PATH FROM HERE:
 	- check if the url was already registered in the database
@@ -215,9 +214,10 @@ def process_urls() -> None:
 		# for debug: print the info
 		#print_p(info)
 
+		filename_pickle = sys.argv[0] + '.api-songs-findDuplicate.pickle'
 		# undocumented api
 		# https://vocadb.net/Song/Create?PVUrl=$foo
-		request = session.get(
+		request = disk_cache_decorator(filename_pickle)(session.get)(
 			f'{SC.h_server}/api/songs/findDuplicate',
 			params = {
 				'term': None, # names
@@ -244,6 +244,16 @@ def process_urls() -> None:
 			print(f'This PV {colorama.Fore.RED}has not been added {colorama.Fore.RESET}to the database yet.')
 			print(f'Add it? {colorama.Fore.CYAN}{SC.h_server}/Song/Create?PVUrl={info["webpage_url"]}')
 			print()
+
+			# for delete_cache; this should not be an actual request
+			_ = disk_cache_decorator(filename_pickle, delete_cache = True)(session.get)(
+				f'{SC.h_server}/api/songs/findDuplicate',
+				params = {
+					'term': None, # names
+					'pv': info['webpage_url'],
+					'getPVInfo': True,
+				}
+			)
 
 	print('----')
 

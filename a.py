@@ -2,17 +2,23 @@
 
 """
 TODO:
-	- check for editing ability?
-	- catch error of broken cookies?
 	- unintelligent matching of an album to a playlist. the album has 10 tracks, the playlist has 10 tracks, we are golden
+	- what happens in an edit conflict?
+	- 'it is an original pv because the producer was detected as the uploader'
+		- FALSE, it may be a false positive, such as with a bad parsing of '鏡音リン・レン'
+	- new flag 'do not ask me if this is a reprint, i told you these are reprints and that will be correct 100% of the time'
+	- allow to search by name more than once even if successful (fixing typo, trying with a different form, ...)
+	- don't ask if the pv type is right before asking; ask for a choice 1 2 3, with a default
+	- add progress indicator (where?)
+	- retry if i input something stupid (non-integer, out of range, ...) for 'choose match: 1 2 3 4 ...'
+		- review input handling
 
 PATH FROM HERE:
-	- check if the url was already registered in the database
-	- do the same stuff the 'add new song' page does: automatically guess info
-	- 'possible matching entries' <- work off of this
 	- manual intervention
 		- constrain search results to a certain producer
 		- apply user-supplied regex to title
+		- search using video description links ('本家：sm00000000')
+			- look up ~that~ pv, and choose the song entry that comes up a second time
 """
 
 # https://docs.python.org/3/howto/curses.html
@@ -203,8 +209,8 @@ def process_urls() -> None:
 
 	infos_working = []
 	for info in infos:
-		print(colorama.Fore.CYAN + info['title'])
-		print(colorama.Fore.CYAN + info['webpage_url'])
+		print(colorama.Back.BLUE + colorama.Fore.WHITE + info['title'])
+		print(colorama.Back.BLUE + colorama.Fore.WHITE + info['webpage_url'])
 
 		# for debug: we don't need direct download urls
 		info.pop('formats', None)
@@ -260,11 +266,11 @@ def process_urls() -> None:
 	for info, request in infos_working:
 		while True:
 			print()
-			print(colorama.Fore.CYAN + info['title'])
-			print(colorama.Fore.CYAN + info['uploader'])
-			print(colorama.Fore.CYAN + info['webpage_url'])
+			print(colorama.Back.BLUE + colorama.Fore.WHITE + info['title'])
+			print(colorama.Back.BLUE + colorama.Fore.WHITE + info['uploader'])
+			print(colorama.Back.BLUE + colorama.Fore.WHITE + info['webpage_url'])
 			print('----')
-			print(colorama.Fore.CYAN + (info['description'] or {colorama.Fore.RESET} + '<no description>'))
+			print(colorama.Back.BLUE + colorama.Fore.WHITE + (info['description'] or {colorama.Fore.RESET} + '<no description>'))
 
 			for i in range(len(request.json()['matches'])):
 				print(f'{colorama.Fore.YELLOW}{i + 1}')
@@ -293,13 +299,13 @@ def process_urls() -> None:
 				song_id = request.json()['matches'][int(match_n) - 1]['entry']['id']
 				pv_type = SC.pv_types.list[SC.pv_type - 1]
 
+				'''
 				# it is an original pv because the producer was detected as the uploader
 				if request.json()['artists']:
 					for entry in request.json()['artists']:
 						if entry['artistType'] == 'Producer':
 							pv_type = SC.pv_types.ORIGINAL
 
-				
 				if input(f'Is the PV type {pv_type}? [Y/n] ').casefold() != 'n':
 					pass
 				else:
@@ -307,6 +313,7 @@ def process_urls() -> None:
 						pv_type = SC.pv_types.list[int(input(str(SC.pv_types.list) + ' [1/2/3]: ')) - 1]
 					except:
 						print(f'{colorama.Fore.RED}Not a valid answer;{colorama.Fore.RESET} continuing as before')
+				'''
 
 				# undocumented api
 				request_entry_data = session.get(
@@ -316,6 +323,7 @@ def process_urls() -> None:
 				if request_entry_data.json()['status'] == 'Approved':
 					if SC.user_group_id < SC.user_group_ids.TRUSTED:
 						print(f'{colorama.Fore.YELLOW}This entry is approved. You do not have the permissions to edit it.')
+						input('Press enter to continue.')
 						break
 
 				# undocumented api
@@ -329,7 +337,7 @@ def process_urls() -> None:
 
 				entry_data_modified = request_entry_data.json()
 				entry_data_modified['pvs'].append(request_pv_data.json())
-				entry_data_modified['updateNotes'] = f'Batch addition of PV: {pv_type}, {info["webpage_url"]}'
+				entry_data_modified['updateNotes'] = f'[assisted] Add {pv_type}: {info["title"]}'
 
 				# undocumented not-api
 				request_save = session.post(

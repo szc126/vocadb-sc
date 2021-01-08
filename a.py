@@ -10,8 +10,7 @@ TODO:
 	- allow to search by name more than once even if successful (fixing typo, trying with a different form, ...)
 	- don't ask if the pv type is right before asking; ask for a choice 1 2 3, with a default
 	- add progress indicator (where?)
-	- retry if i input something stupid (non-integer, out of range, ...) for 'choose match: 1 2 3 4 ...'
-		- review input handling
+	- why did i want to print to stderr? i forget
 
 PATH FROM HERE:
 	- manual intervention
@@ -20,8 +19,6 @@ PATH FROM HERE:
 		- search using video description links ('本家：sm00000000')
 			- look up ~that~ pv, and choose the song entry that comes up a second time
 """
-
-# https://docs.python.org/3/howto/curses.html
 
 import netrc
 import requests # https://stackoverflow.com/questions/2018026/what-are-the-differences-between-the-urllib-urllib2-urllib3-and-requests-modul
@@ -34,7 +31,8 @@ import youtube_dl
 import argparse
 import json
 import prompt_toolkit
-from disk_cache_decorator import disk_cache_decorator
+from disk_cache_decorator import disk_cache_decorator # cache data to disk
+import re
 
 # XXX: what can i call this script? 'SC'ript and 'a.py' are obviously terrible names
 # XXX: is this how classes work?
@@ -82,7 +80,7 @@ SC = SC()
 
 session = requests.Session()
 session.headers.update({
-	'user-agent': '(https://vocadb.net/Profile/u126)',
+	'user-agent': 'https://github.com/szc126/vocadb-sc/blob/main/a.py',
 })
 
 colorama.init(autoreset = True)
@@ -247,11 +245,11 @@ def process_urls() -> None:
 				print()
 		else:
 			infos_working.append((info, request))
-			print(f'This PV {colorama.Fore.RED}has not been added {colorama.Fore.RESET}to the database yet.')
+			print(f'This PV {colorama.Fore.RED}has not been added {colorama.Fore.RESET}to the database yet')
 			print(f'Add it? {colorama.Fore.CYAN}{SC.h_server}/Song/Create?PVUrl={info["webpage_url"]}')
 			print()
 
-			# for delete_cache; this should not be an actual request
+			# for the purpose of delete_cache; this should not be an actual request
 			_ = disk_cache_decorator(filename_pickle, delete_cache = True)(session.get)(
 				f'{SC.h_server}/api/songs/findDuplicate',
 				params = {
@@ -263,18 +261,26 @@ def process_urls() -> None:
 
 	print('----')
 
+	i_infos = 1
 	for info, request in infos_working:
 		while True:
 			print()
-			print(colorama.Back.BLUE + colorama.Fore.WHITE + info['title'])
-			print(colorama.Back.BLUE + colorama.Fore.WHITE + info['uploader'])
-			print(colorama.Back.BLUE + colorama.Fore.WHITE + info['webpage_url'])
+			print(f'{colorama.Fore.YELLOW}{i_infos} / {len(infos_working)}')
+			print(colorama.Fore.BLUE + info['title'])
+			print(colorama.Fore.BLUE + info['uploader'])
+			print(colorama.Fore.BLUE + info['webpage_url'])
 			print('----')
-			print(colorama.Back.BLUE + colorama.Fore.WHITE + (info['description'] or {colorama.Fore.RESET} + '<no description>'))
+			print(colorama.Fore.BLUE + (info['description'] or colorama.Fore.RESET + '<no description>'))
 
 			for i in range(len(request.json()['matches'])):
 				print(f'{colorama.Fore.YELLOW}{i + 1}')
-				print_p(request.json()['matches'][i]['entry'])
+				print(
+					re.sub(
+						r'(^|\n)',
+						r'\1  ',
+						pretty_pv_match_entry(request.json()['matches'][i]['entry'])
+					)
+				)
 			print()
 
 			if request.json()['matches']:
@@ -282,38 +288,50 @@ def process_urls() -> None:
 
 				match_n = '1'
 				while True:
-					i = input('Choose match [1/...], or enter "." to abort: ')
+					i = input('Choose match [1/...], or enter "." to skip this entry: ')
 					if i == '':
 						break
 					elif i == '.':
+						print(f'{colorama.Fore.RED}Skipped')
 						match_n = '.'
 						break
 					else:
-						print_p(request.json()['matches'][int(i) - 1]['entry'])
-						if input('Is this correct? [Y/n] ').casefold() != 'n':
+						try:
 							match_n = int(i)
-							break
+							print(
+								re.sub(
+									r'(^|\n)',
+									r'\1  ',
+									pretty_pv_match_entry(request.json()['matches'][match_n - 1]['entry'])
+								)
+							)
+							if input('Is this correct? [Y/n] ').casefold() != 'n':
+								break
+						except ValueError:
+							print_e(f'{colorama.Fore.RED}Not a valid choice')
+						except IndexError:
+							print_e(f'{colorama.Fore.RED}Not a valid choice')
 				if match_n == '.':
 					break
 
 				song_id = request.json()['matches'][int(match_n) - 1]['entry']['id']
 				pv_type = SC.pv_types.list[SC.pv_type - 1]
 
-				'''
-				# it is an original pv because the producer was detected as the uploader
-				if request.json()['artists']:
-					for entry in request.json()['artists']:
-						if entry['artistType'] == 'Producer':
-							pv_type = SC.pv_types.ORIGINAL
-
-				if input(f'Is the PV type {pv_type}? [Y/n] ').casefold() != 'n':
-					pass
-				else:
-					try:
-						pv_type = SC.pv_types.list[int(input(str(SC.pv_types.list) + ' [1/2/3]: ')) - 1]
-					except:
-						print(f'{colorama.Fore.RED}Not a valid answer;{colorama.Fore.RESET} continuing as before')
-				'''
+				while True:
+					i = input(f'PV type {colorama.Fore.CYAN}{pv_type}{colorama.Fore.RESET}. [continue/Original/Reprint/otHer] ').casefold()
+					if i == '':
+						break
+					else:
+						try:
+							pv_type = {
+								'o': SC.pv_types.ORIGINAL,
+								'r': SC.pv_types.REPRINT,
+								'h': SC.pv_types.OTHER,
+							}[i]
+							if input(f'{colorama.Fore.CYAN}{pv_type}{colorama.Fore.RESET}. Is this correct? [Y/n] ').casefold() != 'n':
+								break
+						except ValueError:
+							print_e(f'{colorama.Fore.RED}Not a valid choice')
 
 				# undocumented api
 				request_entry_data = session.get(
@@ -339,6 +357,11 @@ def process_urls() -> None:
 				entry_data_modified['pvs'].append(request_pv_data.json())
 				entry_data_modified['updateNotes'] = f'[assisted] Add {pv_type}: {info["title"]}'
 
+				# TODO:
+				# we have the entry data. compare:
+				# - video titles
+				# - video length
+
 				# undocumented not-api
 				request_save = session.post(
 					f'{SC.h_server}/Song/Edit/{song_id}',
@@ -348,7 +371,7 @@ def process_urls() -> None:
 				)
 
 				if request_save.status_code == 200:
-					print(f'{colorama.Fore.GREEN}Success; {colorama.Fore.CYAN}{SC.h_server}/S/{song_id}')
+					print(f'{colorama.Fore.GREEN}Success{colorama.Fore.RESET}; {colorama.Fore.CYAN}{SC.h_server}/S/{song_id}')
 				else:
 					print_p(entry_data_modified)
 					raise ValueError(f'Failed to save. HTTP status code {request_save.status_code}')
@@ -358,9 +381,9 @@ def process_urls() -> None:
 				print(f'{colorama.Fore.YELLOW}Match not found')
 				# undocumented api
 				# https://vocadb.net/Song/Create?PVUrl=$foo
-				i = prompt_toolkit.prompt('Search by name, or enter "." to abort: ', default = request.json()['title'])
+				i = prompt_toolkit.prompt('Search by name, or enter "." to skip this entry: ', default = request.json()['title'])
 				if i == '.':
-					print(f'{colorama.Fore.RED}Aborted')
+					print(f'{colorama.Fore.RED}Skipped')
 					break
 				request = session.get(
 					f'{SC.h_server}/api/songs/findDuplicate',
@@ -370,6 +393,9 @@ def process_urls() -> None:
 						'getPVInfo': True,
 					}
 				)
+		i_infos += 1
+	print()
+	print(f'{colorama.Fore.GREEN}Batch complete')
 
 def recursive_get_ytdl_individual_info(info) -> list:
 	'''Helper for flattening nested youtube-dl playlists.'''
@@ -382,6 +408,17 @@ def recursive_get_ytdl_individual_info(info) -> list:
 		return ret
 	else:
 		return [info]
+
+def pretty_pv_match_entry(entry):
+	'''Format the data returned by /api/songs/findDuplicate.'''
+	# saner than a print() (unless you like keys ordered alphabetically)
+	# and add a link to *db.net/S/ as well
+
+	return (
+		colorama.Fore.CYAN + entry['name']['displayName'] + colorama.Fore.RESET + (' // ' + entry['name']['additionalNames'] if entry['name']['additionalNames'] else '') + '\n' +
+		colorama.Fore.CYAN + entry['artistString'] + '\n' +
+		colorama.Fore.CYAN + SC.h_server + '/S/' + str(entry['id']) + colorama.Fore.RESET + ' // ' + entry['entryTypeName']
+	)
 
 # ----
 

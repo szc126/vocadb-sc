@@ -18,6 +18,17 @@ PATH FROM HERE:
 		- apply user-supplied regex to title
 		- search using video description links ('本家：sm00000000')
 			- look up ~that~ pv, and choose the song entry that comes up a second time
+
+COLORS:
+	- green: Good
+	- yellow: Meh
+	- red: Bad
+
+	- reset: non-variable text
+	- cyan: variable text
+
+	- else arbitrary, whatever creates greatest visual distinction
+		- the pretty-printed data is seriously tiring to the eyes when it is all blue
 """
 
 import netrc
@@ -121,14 +132,23 @@ def login() -> bool:
 			'Password': netrc_auth[2],
 		}
 	)
-	if 'Unable to log in' in request.text:
+
+	if request.status_code != 200:
 		raise ValueError(
-			'\n' +
-			bs4.BeautifulSoup(request.text, features = 'html5lib')
-				.find(string = re.compile('Unable to log in'))
-				.parent
-				.parent
-				.prettify()
+			f'Verification failed. HTTP status code {request.status_code}' +
+			(
+				(
+					'\n' +
+					bs4.BeautifulSoup(request.text, features = 'html5lib')
+						.find(string = re.compile('Unable to log in'))
+						.parent
+						.parent
+						.prettify()
+				) if ('Unable to log in' in request.text) else
+				(
+					''
+				)
+			)
 		)
 	print_e(f'{colorama.Fore.GREEN}Login successful')
 	return True
@@ -144,9 +164,9 @@ def verify_login_status(exception = True) -> bool:
 	)
 	if request.status_code != 200:
 		if exception:
-			raise ValueError(f'Verification failed')
+			raise ValueError(f'Verification failed. HTTP status code {request.status_code}')
 		else:
-			print_e(f'{colorama.Fore.RED}Verification failed')
+			print_e(f'{colorama.Fore.RED}Verification failed. HTTP status code {request.status_code}')
 			return False
 
 	SC.user_group_id = SC.user_group_ids.from_str(request.json()['groupId'])
@@ -207,8 +227,8 @@ def process_urls() -> None:
 
 	infos_working = []
 	for info in infos:
-		print(colorama.Back.BLUE + colorama.Fore.WHITE + info['title'])
-		print(colorama.Back.BLUE + colorama.Fore.WHITE + info['webpage_url'])
+		print(colorama.Fore.CYAN + info['title'])
+		print(colorama.Fore.BLUE + info['webpage_url'])
 
 		# for debug: we don't need direct download urls
 		info.pop('formats', None)
@@ -263,15 +283,11 @@ def process_urls() -> None:
 
 	i_infos = 1
 	for info, request in infos_working:
-		while True:
-			print()
-			print(f'{colorama.Fore.YELLOW}{i_infos} / {len(infos_working)}')
-			print(colorama.Fore.BLUE + info['title'])
-			print(colorama.Fore.BLUE + info['uploader'])
-			print(colorama.Fore.BLUE + info['webpage_url'])
-			print('----')
-			print(colorama.Fore.BLUE + (info['description'] or colorama.Fore.RESET + '<no description>'))
+		print()
+		print(f'{colorama.Fore.YELLOW}{i_infos} / {len(infos_working)}')
+		print(pretty_youtubedl_info(info))
 
+		while True:
 			for i in range(len(request.json()['matches'])):
 				print(f'{colorama.Fore.YELLOW}{i + 1}')
 				print(
@@ -282,6 +298,9 @@ def process_urls() -> None:
 					)
 				)
 			print()
+
+			# TODO:
+			# - get upset if a match is a PV match (which happens when I manually add a PV behind the script's back)
 
 			if request.json()['matches']:
 				print(f'{colorama.Fore.YELLOW}Match potentially found')
@@ -414,11 +433,39 @@ def pretty_pv_match_entry(entry):
 	# saner than a print() (unless you like keys ordered alphabetically)
 	# and add a link to *db.net/S/ as well
 
-	return (
-		colorama.Fore.CYAN + entry['name']['displayName'] + colorama.Fore.RESET + (' // ' + entry['name']['additionalNames'] if entry['name']['additionalNames'] else '') + '\n' +
-		colorama.Fore.CYAN + entry['artistString'] + '\n' +
-		colorama.Fore.CYAN + SC.h_server + '/S/' + str(entry['id']) + colorama.Fore.RESET + ' // ' + entry['entryTypeName']
-	)
+	display_name = entry['name']['displayName']
+	additional_names = entry['name']['additionalNames']
+	artist_string = entry['artistString']
+	url_db_s = SC.h_server + '/S/' + str(entry['id'])
+	entry_type_name = entry['entryTypeName']
+
+	return '\n'.join(filter(None, [
+		colorama.Fore.CYAN + display_name + (colorama.Fore.MAGENTA + ' // ' + colorama.Fore.RESET + additional_names if additional_names else ''),
+		colorama.Fore.RESET + artist_string,
+		colorama.Fore.BLUE + url_db_s + colorama.Fore.MAGENTA + ' // ' + colorama.Fore.RESET + entry_type_name,
+	]))
+
+def pretty_youtubedl_info(info):
+	'''Format the info extracted by youtube-dl.'''
+
+	title = info['title']
+	uploader = info['uploader']
+	upload_date = info['upload_date'][:-4] + ' '+ info['upload_date'][-4:-2] + ' '+ info['upload_date'][-2:]
+	duration = str(int(info['duration']) // 60) + ':' + str(int(info['duration']) % 60).zfill(2)
+	webpage_url = info['webpage_url']
+	description = info['description'] if 'description' in info else None
+
+	return '\n'.join(filter(None, [
+		colorama.Fore.CYAN + title + (colorama.Fore.MAGENTA + ' // ' + colorama.Fore.RESET + duration if duration else ''),
+		colorama.Fore.RESET + uploader,
+		colorama.Fore.BLUE + webpage_url + (colorama.Fore.MAGENTA + ' // ' + colorama.Fore.RESET + upload_date if upload_date else ''),
+		(
+			colorama.Fore.RESET + '----' + '\n' +
+			colorama.Fore.BLUE + description
+		) if description else (
+			''
+		),
+	]))
 
 # ----
 
@@ -433,9 +480,7 @@ def main(server = None, urls = None, pv_type = None, playliststart = None, playl
 	if playlistend:
 		ytdl_config['playlistend'] = playlistend
 
-	if load_cookies():
-		verify_login_status(exception = True)
-	else:
+	if not (load_cookies() and verify_login_status(exception = False)):
 		login()
 		verify_login_status(exception = True)
 		save_cookies()

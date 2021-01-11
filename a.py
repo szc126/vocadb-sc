@@ -42,8 +42,10 @@ import youtube_dl
 import argparse
 import json
 import prompt_toolkit
-from disk_cache_decorator import disk_cache_decorator # cache data to disk
 import re
+import math
+
+from disk_cache_decorator import disk_cache_decorator # local module
 
 # XXX: what can i call this script? 'SC'ript and 'a.py' are obviously terrible names
 # XXX: is this how classes work?
@@ -99,6 +101,7 @@ colorama.init(autoreset = True)
 ytdl_config = {
 	'usenetrc': True,
 	'simulate': True,
+	'ignoreerrors': True, # as with deleted videos in a YouTube playlist
 	#'playliststart': SC.playliststart, # this part is run before main(), so user argument is not (cannot be) used
 	#'playlistend': SC.playlistend,
 }
@@ -225,6 +228,7 @@ def process_urls() -> None:
 			infos = infos + recursive_get_ytdl_individual_info(info)
 		print()
 
+	print_e(f'Searching with {SC.server}')
 	infos_working = []
 	for info in infos:
 		print(colorama.Fore.CYAN + info['title'])
@@ -244,7 +248,6 @@ def process_urls() -> None:
 		request = disk_cache_decorator(filename_pickle)(session.get)(
 			f'{SC.h_server}/api/songs/findDuplicate',
 			params = {
-				'term': None, # names
 				'pv': info['webpage_url'],
 				'getPVInfo': True,
 			}
@@ -273,7 +276,6 @@ def process_urls() -> None:
 			_ = disk_cache_decorator(filename_pickle, delete_cache = True)(session.get)(
 				f'{SC.h_server}/api/songs/findDuplicate',
 				params = {
-					'term': None, # names
 					'pv': info['webpage_url'],
 					'getPVInfo': True,
 				}
@@ -305,14 +307,13 @@ def process_urls() -> None:
 			if request.json()['matches']:
 				print(f'{colorama.Fore.YELLOW}Match potentially found')
 
-				match_n = '1'
+				match_n = 1
 				while True:
 					i = input('Choose match [1/...], or enter "." to skip this entry: ')
 					if i == '':
 						break
 					elif i == '.':
-						print(f'{colorama.Fore.RED}Skipped')
-						match_n = '.'
+						match_n = -1
 						break
 					else:
 						try:
@@ -330,10 +331,11 @@ def process_urls() -> None:
 							print_e(f'{colorama.Fore.RED}Not a valid choice')
 						except IndexError:
 							print_e(f'{colorama.Fore.RED}Not a valid choice')
-				if match_n == '.':
+				if match_n == -1:
+					print(f'{colorama.Fore.RED}Skipped')
 					break
 
-				song_id = request.json()['matches'][int(match_n) - 1]['entry']['id']
+				song_id = request.json()['matches'][match_n - 1]['entry']['id']
 				pv_type = SC.pv_types.list[SC.pv_type - 1]
 
 				while True:
@@ -372,14 +374,27 @@ def process_urls() -> None:
 					}
 				)
 
-				entry_data_modified = request_entry_data.json()
-				entry_data_modified['pvs'].append(request_pv_data.json())
-				entry_data_modified['updateNotes'] = f'[assisted] Add {pv_type}: {info["title"]}'
-
 				# TODO:
 				# we have the entry data. compare:
 				# - video titles
-				# - video length
+				# - <s>video length</s>
+
+				# XXX: untested
+				if not math.isclose(request_pv_data.json()['length'], request_entry_data.json()['lengthSeconds'], abs_tol = 2):
+					if input(
+							f'{colorama.Fore.YELLOW}Track length appears to be substantially different.' +
+							f'{colorama.Fore.RESET} (' +
+							colorama.Fore.CYAN + pretty_duration(request_pv_data.json()['length']) +
+							f'{colorama.Fore.RESET} vs. ' +
+							colorama.Fore.CYAN + pretty_duration(request_entry_data.json()['lengthSeconds']) +
+							f'{colorama.Fore.RESET}) Skip this entry? [y/N]'
+						).casefold() != 'y':
+						print(f'{colorama.Fore.RED}Skipped')
+						break
+
+				entry_data_modified = request_entry_data.json()
+				entry_data_modified['pvs'].append(request_pv_data.json())
+				entry_data_modified['updateNotes'] = f'[assisted] Add {pv_type}: {info["title"]}'
 
 				# undocumented not-api
 				request_save = session.post(
@@ -423,7 +438,11 @@ def recursive_get_ytdl_individual_info(info) -> list:
 	if '_type' in info and info['_type'] == 'playlist':
 		ret = []
 		for entry in info['entries']:
-			ret = ret + recursive_get_ytdl_individual_info(entry)
+			if entry is None:
+				# as with deleted videos in a YouTube playlist
+				continue
+			else:
+				ret = ret + recursive_get_ytdl_individual_info(entry)
 		return ret
 	else:
 		return [info]
@@ -451,7 +470,7 @@ def pretty_youtubedl_info(info):
 	title = info['title']
 	uploader = info['uploader']
 	upload_date = info['upload_date'][:-4] + ' '+ info['upload_date'][-4:-2] + ' '+ info['upload_date'][-2:]
-	duration = str(int(info['duration']) // 60) + ':' + str(int(info['duration']) % 60).zfill(2)
+	duration = pretty_duration(info['duration'])
 	webpage_url = info['webpage_url']
 	description = info['description'] if 'description' in info else None
 
@@ -466,6 +485,11 @@ def pretty_youtubedl_info(info):
 			''
 		),
 	]))
+
+def pretty_duration(seconds):
+	'''Reformat a duration (seconds) as M:SS.'''
+
+	return str(int(seconds) // 60) + ':' + str(int(seconds) % 60).zfill(2)
 
 # ----
 

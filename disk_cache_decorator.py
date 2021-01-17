@@ -37,4 +37,3 @@ def disk_cache_decorator(filename, delete_cache = False):
 				return value # return data
 		return inner
 	return decorator
-	

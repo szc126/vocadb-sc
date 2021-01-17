@@ -18,6 +18,8 @@ PATH FROM HERE:
 		- apply user-supplied regex to title
 		- search using video description links ('本家：sm00000000')
 			- look up ~that~ pv, and choose the song entry that comes up a second time
+		- manually give song ID
+			- bc the web interface is kinda bothersome tbh
 
 COLORS:
 	- green: Good
@@ -230,7 +232,8 @@ def process_urls() -> None:
 
 	print_e(f'Searching with {SC.server}')
 	infos_working = []
-	for info in infos:
+	for i, info in enumerate(infos):
+		print(f'{colorama.Fore.YELLOW}{i + 1} / {len(infos)}')
 		print(colorama.Fore.CYAN + info['title'])
 		print(colorama.Fore.BLUE + info['webpage_url'])
 
@@ -264,7 +267,14 @@ def process_urls() -> None:
 					pv_added = True
 		if pv_added:
 				song_id = request.json()['matches'][0]['entry']['id']
-				print(f'This PV {colorama.Fore.GREEN}has already been added {colorama.Fore.RESET}to the database. {colorama.Fore.CYAN}{SC.h_server}/S/{song_id}')
+				print(f'This PV {colorama.Fore.GREEN}has already been added {colorama.Fore.RESET}to the database.')
+				print(
+					re.sub(
+						r'(^|\n)',
+						r'\1  ',
+						pretty_pv_match_entry(request.json()['matches'][0]['entry'])
+					)
+				)
 				print()
 		else:
 			infos_working.append((info, request))
@@ -309,11 +319,14 @@ def process_urls() -> None:
 
 				match_n = 1
 				while True:
-					i = input('Choose match [1/...], or enter "." to skip this entry: ')
+					i = input('Choose match [1/...], or enter "s<song ID>", or enter "." to skip this entry: ')
 					if i == '':
 						break
+					elif i[0] == 's':
+						match_n = int(i[1:]) * -1 # ID as a negative integer
+						break
 					elif i == '.':
-						match_n = -1
+						match_n = 0
 						break
 					else:
 						try:
@@ -331,11 +344,14 @@ def process_urls() -> None:
 							print_e(f'{colorama.Fore.RED}Not a valid choice')
 						except IndexError:
 							print_e(f'{colorama.Fore.RED}Not a valid choice')
-				if match_n == -1:
+				if match_n == 0:
 					print(f'{colorama.Fore.RED}Skipped')
 					break
+				if match_n < 0:
+					song_id = match_n * -1
+				else:
+					song_id = request.json()['matches'][match_n - 1]['entry']['id']
 
-				song_id = request.json()['matches'][match_n - 1]['entry']['id']
 				pv_type = SC.pv_types.list[SC.pv_type - 1]
 
 				while True:
@@ -361,8 +377,8 @@ def process_urls() -> None:
 
 				if request_entry_data.json()['status'] == 'Approved':
 					if SC.user_group_id < SC.user_group_ids.TRUSTED:
-						print(f'{colorama.Fore.YELLOW}This entry is approved. You do not have the permissions to edit it.')
-						input('Press enter to continue.')
+						input(f'{colorama.Fore.YELLOW}This entry is approved. You do not have the permissions to edit it. {colorama.Fore.RESET}Press enter to continue.')
+						print(f'{colorama.Fore.RED}Skipped')
 						break
 
 				# undocumented api
@@ -379,16 +395,15 @@ def process_urls() -> None:
 				# - video titles
 				# - <s>video length</s>
 
-				# XXX: untested
 				if not math.isclose(request_pv_data.json()['length'], request_entry_data.json()['lengthSeconds'], abs_tol = 2):
 					if input(
 							f'{colorama.Fore.YELLOW}Track length appears to be substantially different.' +
 							f'{colorama.Fore.RESET} (' +
 							colorama.Fore.CYAN + pretty_duration(request_pv_data.json()['length']) +
-							f'{colorama.Fore.RESET} vs. ' +
+							f'{colorama.Fore.RESET} and not ' +
 							colorama.Fore.CYAN + pretty_duration(request_entry_data.json()['lengthSeconds']) +
-							f'{colorama.Fore.RESET}) Skip this entry? [y/N]'
-						).casefold() != 'y':
+							f'{colorama.Fore.RESET}) Skip this entry? [y/N] '
+					).casefold() != 'n':
 						print(f'{colorama.Fore.RED}Skipped')
 						break
 

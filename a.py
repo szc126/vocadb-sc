@@ -323,8 +323,11 @@ def process_urls() -> None:
 					if i == '':
 						break
 					elif i[0] == 's':
-						match_n = int(i[1:]) * -1 # ID as a negative integer
-						break
+						try:
+							match_n = int(i[1:]) * -1 # ID as a negative integer
+							break
+						except ValueError:
+							print_e(f'{colorama.Fore.RED}Not a valid choice')
 					elif i == '.':
 						match_n = 0
 						break

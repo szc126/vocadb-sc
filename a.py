@@ -251,7 +251,7 @@ def process_urls() -> None:
 		request = disk_cache_decorator(filename_pickle)(session.get)(
 			f'{SC.h_server}/api/songs/findDuplicate',
 			params = {
-				'pv': info['webpage_url'],
+				'pv[]': info['webpage_url'],
 				'getPVInfo': True,
 			}
 		)
@@ -286,7 +286,7 @@ def process_urls() -> None:
 			_ = disk_cache_decorator(filename_pickle, delete_cache = True)(session.get)(
 				f'{SC.h_server}/api/songs/findDuplicate',
 				params = {
-					'pv': info['webpage_url'],
+					'pv[]': info['webpage_url'],
 					'getPVInfo': True,
 				}
 			)
@@ -440,8 +440,8 @@ def process_urls() -> None:
 				request = session.get(
 					f'{SC.h_server}/api/songs/findDuplicate',
 					params = {
-						'term': i,
-						'pv': info['webpage_url'],
+						'term[]': i,
+						'pv[]': info['webpage_url'],
 						'getPVInfo': True,
 					}
 				)

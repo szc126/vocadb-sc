@@ -11,6 +11,7 @@ TODO:
 	- don't ask if the pv type is right before asking; ask for a choice 1 2 3, with a default
 	- add progress indicator (where?)
 	- why did i want to print to stderr? i forget
+	- (maybe?) regex with named groups for vocalist too
 
 PATH FROM HERE:
 	- manual intervention
@@ -218,7 +219,7 @@ def collect_urls() -> None:
 			continue
 		SC.urls.append(i)
 
-def process_urls() -> None:
+def process_urls(regex = None) -> None:
 	''''''
 
 	infos = []
@@ -245,12 +246,17 @@ def process_urls() -> None:
 		# for debug: print the info
 		#print_p(info)
 
+		found_title = None
+		found_title = (re.search(re.compile(regex), info['title']) if regex else found_title)
+		found_title = (found_title.group(1) if found_title else found_title)
+
 		filename_pickle = sys.argv[0] + '.api-songs-findDuplicate.pickle'
 		# undocumented api
 		# https://vocadb.net/Song/Create?PVUrl=$foo
 		request = disk_cache_decorator(filename_pickle)(session.get)(
 			f'{SC.h_server}/api/songs/findDuplicate',
 			params = {
+				'term[]': (found_title or ''),
 				'pv[]': info['webpage_url'],
 				'getPVInfo': True,
 			}
@@ -286,6 +292,7 @@ def process_urls() -> None:
 			_ = disk_cache_decorator(filename_pickle, delete_cache = True)(session.get)(
 				f'{SC.h_server}/api/songs/findDuplicate',
 				params = {
+					'term[]': (found_title or ''),
 					'pv[]': info['webpage_url'],
 					'getPVInfo': True,
 				}
@@ -430,10 +437,10 @@ def process_urls() -> None:
 
 				break
 			else:
-				print(f'{colorama.Fore.YELLOW}Match not found')
+				print(f'{colorama.Fore.YELLOW}Match not found' + (f'{colorama.Fore.RESET} ({found_title})' if found_title else ''))
 				# undocumented api
 				# https://vocadb.net/Song/Create?PVUrl=$foo
-				i = prompt_toolkit.prompt('Search by name, or enter "." to skip this entry: ', default = request.json()['title'])
+				i = prompt_toolkit.prompt('Search by name, or enter "." to skip this entry: ', default = found_title or request.json()['title'])
 				if i == '.':
 					print(f'{colorama.Fore.RED}Skipped')
 					break
@@ -511,7 +518,7 @@ def pretty_duration(seconds):
 
 # ----
 
-def main(server = None, urls = None, pv_type = None, playliststart = None, playlistend = None):
+def main(server = None, urls = None, pv_type = None, playliststart = None, playlistend = None, regex = None):
 	SC.server = server or SC.server
 	SC.urls = urls or SC.urls
 	SC.pv_type = pv_type or SC.pv_type
@@ -532,7 +539,7 @@ def main(server = None, urls = None, pv_type = None, playliststart = None, playl
 	print()
 	if not SC.urls:
 		collect_urls()
-	process_urls()
+	process_urls(regex = regex)
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(
@@ -562,6 +569,11 @@ if __name__ == '__main__':
 		help = 'youtube-dl: playlistend',
 	)
 	parser.add_argument(
+		'--regex',
+		dest = 'regex',
+		help = 'Regex for the title.',
+	)
+	parser.add_argument(
 		'urls',
 		nargs = '*',
 		metavar = 'URL',
@@ -577,4 +589,5 @@ if __name__ == '__main__':
 		pv_type = args.pv_type,
 		playliststart = args.playliststart,
 		playlistend = args.playlistend,
+		regex = args.regex,
 	)

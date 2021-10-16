@@ -283,7 +283,7 @@ def process_urls(regex = None) -> None:
 				)
 				print()
 		else:
-			infos_working.append((info, request))
+			infos_working.append((info, request, found_title))
 			print(f'This PV {colorama.Fore.RED}has not been added {colorama.Fore.RESET}to the database yet')
 			print(f'Add it? {colorama.Fore.CYAN}{SC.h_server}/Song/Create?PVUrl={info["webpage_url"]}')
 			print()
@@ -301,7 +301,7 @@ def process_urls(regex = None) -> None:
 	print('----')
 
 	i_infos = 1
-	for info, request in infos_working:
+	for info, request, found_title in infos_working:
 		print()
 		print(f'{colorama.Fore.YELLOW}{i_infos} / {len(infos_working)}')
 		print(pretty_youtubedl_info(info))
@@ -405,7 +405,7 @@ def process_urls(regex = None) -> None:
 				# - video titles
 				# - <s>video length</s>
 
-				if not math.isclose(request_pv_data.json()['length'], request_entry_data.json()['lengthSeconds'], abs_tol = 2):
+				if request_entry_data.json()['lengthSeconds'] > 0 and not math.isclose(request_pv_data.json()['length'], request_entry_data.json()['lengthSeconds'], abs_tol = 2):
 					if input(
 							f'{colorama.Fore.YELLOW}Track length appears to be substantially different.' +
 							f'{colorama.Fore.RESET} (' +

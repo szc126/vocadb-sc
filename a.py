@@ -41,7 +41,7 @@ import re
 import sys
 import colorama
 import pickle
-import youtube_dl
+import yt_dlp
 import argparse
 import json
 import prompt_toolkit
@@ -224,7 +224,7 @@ def process_urls(regex = None) -> None:
 
 	infos = []
 	print_e('Fetching video information')
-	with youtube_dl.YoutubeDL(ytdl_config) as ytdl:
+	with yt_dlp.YoutubeDL(ytdl_config) as ytdl:
 		for url in SC.urls:
 			filename_pickle = sys.argv[0] + '.ytdl_extract_info.' + (str('playliststart' in ytdl_config and ytdl_config['playliststart'] or '')) + '-' + (str('playlistend' in ytdl_config and ytdl_config['playlistend'] or '')) + '.pickle' # ytdl_config differences are invisible to disk_cache_decorator()
 			info = disk_cache_decorator(filename_pickle)(ytdl.extract_info)(url)

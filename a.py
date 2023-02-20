@@ -415,12 +415,18 @@ def process_urls(regex = None) -> None:
 				entry_data_modified['pvs'].append(request_pv_data.json())
 				entry_data_modified['updateNotes'] = f'[assisted] Add {pv_type}: {info["title"]}'
 
+				_ = session.get(
+					f'{SC.h_server}/api/antiforgery/token'
+				)
 				# undocumented not-api
 				request_save = session.post(
-					f'{SC.h_server}/Song/Edit/{song_id}',
-					{
-						'EditedSong': json.dumps(entry_data_modified),
-					}
+					f'{SC.h_server}/api/songs/{song_id}',
+					headers = {
+						'requestVerificationToken': session.cookies.get_dict()['XSRF-TOKEN'],
+					},
+					files = {
+						'contract': (None, json.dumps(entry_data_modified))
+					},
 				)
 
 				if request_save.status_code == 200:

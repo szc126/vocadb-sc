@@ -246,7 +246,7 @@ def process_urls(regex = None) -> None:
 
 		filename_pickle = sys.argv[0] + '.api-songs-findDuplicate.pickle'
 		# undocumented api
-		# https://vocadb.net/Song/Create?PVUrl=$foo
+		# https://vocadb.net/Song/Create?pvUrl=$foo
 		request = disk_cache_decorator(filename_pickle)(session.get)(
 			f'{SC.h_server}/api/songs/findDuplicate',
 			params = {
@@ -279,7 +279,7 @@ def process_urls(regex = None) -> None:
 		else:
 			infos_working.append((info, request, found_title))
 			print(f'This PV {colorama.Fore.RED}has not been added {colorama.Fore.RESET}to the database yet')
-			print(f'Add it? {colorama.Fore.CYAN}{SC.h_server}/Song/Create?PVUrl={info["webpage_url"]}')
+			print(f'Add it? {colorama.Fore.CYAN}{SC.h_server}/Song/Create?pvUrl={info["webpage_url"]}')
 			print()
 
 			# for the purpose of delete_cache; this should not be an actual request
@@ -433,7 +433,7 @@ def process_urls(regex = None) -> None:
 			else:
 				print(f'{colorama.Fore.YELLOW}Match not found' + (f'{colorama.Fore.RESET} ({found_title})' if found_title else ''))
 				# undocumented api
-				# https://vocadb.net/Song/Create?PVUrl=$foo
+				# https://vocadb.net/Song/Create?pvUrl=$foo
 				i = prompt_toolkit.prompt('Search by name, or enter "." to skip this entry: ', default = found_title or request.json()['title'])
 				if i == '.':
 					print(f'{colorama.Fore.RED}Skipped')

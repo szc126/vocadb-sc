@@ -131,30 +131,24 @@ def login() -> bool:
 		raise LookupError(f'Could not find the {SC.server} machine in .netrc')
 
 	print_e(f'Logging in to {colorama.Fore.CYAN}{SC.server}')
+	_ = session.get(
+		f'{SC.h_server}/api/antiforgery/token'
+	)
 	request = session.post(
-		f'{SC.h_server}/User/Login',
-		{
-			'UserName': netrc_auth[0],
-			'Password': netrc_auth[2],
+		f'{SC.h_server}/api/users/login',
+		json = {
+			'userName': netrc_auth[0],
+			'password': netrc_auth[2],
+		},
+		headers = {
+			'requestVerificationToken': session.cookies.get_dict()['XSRF-TOKEN'],
 		}
 	)
 
-	if request.status_code != 200:
+	if request.status_code != 204:
 		raise ValueError(
 			f'Verification failed. HTTP status code {request.status_code}' +
-			(
-				(
-					'\n' +
-					bs4.BeautifulSoup(request.text, features = 'html5lib')
-						.find(string = re.compile('Unable to log in'))
-						.parent
-						.parent
-						.prettify()
-				) if ('Unable to log in' in request.text) else
-				(
-					''
-				)
-			)
+			'\n- ' + '\n- '.join(request.json()['errors'][''])
 		)
 	print_e(f'{colorama.Fore.GREEN}Login successful')
 	return True

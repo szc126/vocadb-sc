@@ -77,7 +77,6 @@ class SCUserGroupIds:
 		}[string]
 class SC:
 	server = 'vocadb.net'
-	urls = []
 	pv_type = 2
 
 	user_group_id = 0
@@ -202,6 +201,7 @@ def load_cookies() -> bool:
 def collect_urls() -> None:
 	'''Collect URLS from standard input.'''
 
+	urls = []
 	print_e('Enter URLs, one per line. Enter "." when done.')
 	while True:
 		i = input()
@@ -209,19 +209,24 @@ def collect_urls() -> None:
 			break
 		if i.strip() == '' or i.startswith('#'):
 			continue
-		SC.urls.append(i)
+		urls.append(i)
+	return urls
 
-def process_urls(regex = None) -> None:
+def get_ytdl_info(urls):
 	''''''
 
 	infos = []
 	print_e('Fetching video information')
 	with yt_dlp.YoutubeDL(ytdl_config) as ytdl:
-		for url in SC.urls:
+		for url in urls:
 			filename_pickle = sys.argv[0] + '.ytdl_extract_info.' + (str('playliststart' in ytdl_config and ytdl_config['playliststart'] or '')) + '-' + (str('playlistend' in ytdl_config and ytdl_config['playlistend'] or '')) + '.pickle' # ytdl_config differences are invisible to disk_cache_decorator()
 			info = disk_cache_decorator(filename_pickle)(ytdl.extract_info)(url)
 			infos += recursive_get_ytdl_individual_info(info)
 		print()
+	return infos
+
+def process_urls(infos, regex = None) -> None:
+	''''''
 
 	print_e(f'Searching with {SC.server}')
 	infos_working = []
@@ -521,7 +526,6 @@ def pretty_duration(seconds):
 
 def main(server = None, pv_type = None, playliststart = None, playlistend = None, regex = None, urls = None, ytbulk = None):
 	SC.server = server or SC.server
-	SC.urls = urls or SC.urls
 	SC.pv_type = pv_type or SC.pv_type
 
 	# youtube-dl won't accept None or False, complicating everything
@@ -538,9 +542,10 @@ def main(server = None, pv_type = None, playliststart = None, playlistend = None
 	# ----
 
 	print()
-	if not SC.urls:
-		collect_urls()
-	process_urls(regex = regex)
+	if not urls:
+		urls = collect_urls()
+	info = get_ytdl_info(urls)
+	process_urls(info, regex = regex)
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(

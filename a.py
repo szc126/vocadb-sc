@@ -36,7 +36,6 @@ COLORS:
 
 import netrc
 import requests # https://stackoverflow.com/questions/2018026/what-are-the-differences-between-the-urllib-urllib2-urllib3-and-requests-modul
-import bs4
 import re
 import sys
 import colorama
@@ -45,7 +44,6 @@ import yt_dlp
 import argparse
 import json
 import prompt_toolkit
-import re
 import math
 
 from disk_cache_decorator import disk_cache_decorator # local module

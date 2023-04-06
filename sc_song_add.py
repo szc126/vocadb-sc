@@ -48,7 +48,7 @@ import math
 
 from disk_cache_decorator import disk_cache_decorator # local module
 
-# XXX: what can i call this script? 'SC'ript and 'a.py' are obviously terrible names
+# XXX: rename from 'SC'ript to 'song-add' or something idk
 # XXX: is this how classes work?
 class SCPvTypes:
 	ORIGINAL = 'Original'
@@ -94,7 +94,7 @@ SC = SC()
 
 session = requests.Session()
 session.headers.update({
-	'user-agent': 'https://github.com/szc126/vocadb-sc/blob/main/a.py',
+	'user-agent': 'https://github.com/szc126/vocadb-sc/blob/main/sc_song_add.py',
 })
 
 colorama.init(autoreset = True)

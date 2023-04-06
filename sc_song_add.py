@@ -519,7 +519,7 @@ def pretty_duration(seconds):
 
 # ----
 
-def main(server = None, urls = None, pv_type = None, playliststart = None, playlistend = None, regex = None):
+def main(server = None, pv_type = None, playliststart = None, playlistend = None, regex = None, urls = None, ytbulk = None):
 	SC.server = server or SC.server
 	SC.urls = urls or SC.urls
 	SC.pv_type = pv_type or SC.pv_type
@@ -548,7 +548,6 @@ if __name__ == '__main__':
 	)
 	parser.add_argument(
 		'--server',
-		dest = 'server',
 		help = '',
 	)
 	parser.add_argument(
@@ -559,36 +558,38 @@ if __name__ == '__main__':
 	)
 	parser.add_argument(
 		'--playliststart',
-		dest = 'playliststart',
 		type = int,
 		help = 'youtube-dl: playliststart',
 	)
 	parser.add_argument(
 		'--playlistend',
-		dest = 'playlistend',
 		type = int,
 		help = 'youtube-dl: playlistend',
 	)
 	parser.add_argument(
 		'--regex',
-		dest = 'regex',
-		help = 'Regex for the title.',
+		help = 'Regular expression for the title. Accepts one capture group, which will be the title',
 	)
 	parser.add_argument(
 		'urls',
 		nargs = '*',
 		metavar = 'URL',
-		help = 'A URL(s) to process. If not given here, you will be prompted for a list.',
+		help = 'URL(s) to process.'
 		# use '--' before an URL that begins with a hyphen
 		# https://docs.python.org/dev/library/argparse.html#arguments-containing
+	)
+	parser.add_argument(
+		'--ytbulk',
+		help = 'videos.json to process, from https://mattw.io/youtube-metadata/bulk',
 	)
 	args = parser.parse_args()
 
 	main(
 		server = args.server,
-		urls = args.urls,
 		pv_type = args.pv_type,
 		playliststart = args.playliststart,
 		playlistend = args.playlistend,
 		regex = args.regex,
+		urls = args.urls,
+		ytbulk = args.ytbulk,
 	)

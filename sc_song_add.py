@@ -175,7 +175,7 @@ def verify_login_status(exception = True) -> bool:
 def save_cookies() -> bool:
 	'''Save cookies to disk.'''
 
-	filename = sys.argv[0] + '.cookies.pickle'
+	filename = sys.argv[0] + '.cookies' + '.' + SC.server + '.pickle'
 	with open(filename, 'wb') as file:
 		pickle.dump(session.cookies, file)
 	print_e(f'{colorama.Fore.GREEN}Cookies saved{colorama.Fore.RESET} to {colorama.Fore.CYAN}{filename}')
@@ -185,7 +185,7 @@ def load_cookies() -> bool:
 	'''Load cookies from disk.'''
 
 	try:
-		filename = sys.argv[0] + '.cookies.pickle'
+		filename = sys.argv[0] + '.cookies' + '.' + SC.server + '.pickle'
 		with open(filename, 'rb') as file:
 			session.cookies.update(pickle.load(file))
 		print_e(f'{colorama.Fore.GREEN}Cookies loaded{colorama.Fore.RESET} from {colorama.Fore.CYAN}{filename}')

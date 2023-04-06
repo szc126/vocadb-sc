@@ -494,7 +494,7 @@ def pretty_youtubedl_info(info):
 
 	title = info['title']
 	uploader = info['uploader']
-	upload_date = info['upload_date'][:-4] + ' '+ info['upload_date'][-4:-2] + ' '+ info['upload_date'][-2:]
+	upload_date = info['upload_date']
 	duration = pretty_duration(info['duration'])
 	webpage_url = info['webpage_url']
 	description = info['description'] if 'description' in info else None

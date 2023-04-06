@@ -220,7 +220,7 @@ def process_urls(regex = None) -> None:
 		for url in SC.urls:
 			filename_pickle = sys.argv[0] + '.ytdl_extract_info.' + (str('playliststart' in ytdl_config and ytdl_config['playliststart'] or '')) + '-' + (str('playlistend' in ytdl_config and ytdl_config['playlistend'] or '')) + '.pickle' # ytdl_config differences are invisible to disk_cache_decorator()
 			info = disk_cache_decorator(filename_pickle)(ytdl.extract_info)(url)
-			infos = infos + recursive_get_ytdl_individual_info(info)
+			infos += recursive_get_ytdl_individual_info(info)
 		print()
 
 	print_e(f'Searching with {SC.server}')
@@ -263,17 +263,18 @@ def process_urls(regex = None) -> None:
 			for entry in request.json()['matches']:
 				if entry['matchProperty'] == 'PV':
 					pv_added = True
+					break
 		if pv_added:
-				song_id = request.json()['matches'][0]['entry']['id']
-				print(f'This PV {colorama.Fore.GREEN}has already been added {colorama.Fore.RESET}to the database.')
-				print(
-					re.sub(
-						r'(^|\n)',
-						r'\1  ',
-						pretty_pv_match_entry(request.json()['matches'][0]['entry'])
-					)
+			song_id = request.json()['matches'][0]['entry']['id']
+			print(f'This PV {colorama.Fore.GREEN}has already been added {colorama.Fore.RESET}to the database.')
+			print(
+				re.sub(
+					r'(^|\n)',
+					r'\1  ',
+					pretty_pv_match_entry(request.json()['matches'][0]['entry'])
 				)
-				print()
+			)
+			print()
 		else:
 			infos_working.append((info, request, found_title))
 			print(f'This PV {colorama.Fore.RED}has not been added {colorama.Fore.RESET}to the database yet')

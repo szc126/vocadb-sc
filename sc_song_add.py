@@ -225,6 +225,25 @@ def get_ytdl_info(urls):
 		print()
 	return infos
 
+def process_ytbulk(filename):
+	infos = []
+	with open(filename, 'r') as file:
+		data = json.load(file)
+		for video in data:
+			infos.append({
+				'title': video['snippet']['title'],
+				'uploader': video['snippet']['channelTitle'],
+				'upload_date': video['snippet']['publishedAt'],
+				'duration': re.sub(
+					r'PT(\d+M)?(\d+S)?',
+					lambda match: str(  int(match.group(1)[:-1] if match.group(1) else 0) * 60 + int(match.group(2)[:-1] if match.group(2) else 0)  ),
+					video['contentDetails']['duration']
+				),
+				'webpage_url': 'https://www.youtube.com/watch?v=' + video['id'],
+				'description': video['snippet']['description'],
+			})
+	return infos
+
 def process_urls(infos, regex = None) -> None:
 	''''''
 
@@ -542,9 +561,12 @@ def main(server = None, pv_type = None, playliststart = None, playlistend = None
 	# ----
 
 	print()
-	if not urls:
-		urls = collect_urls()
-	info = get_ytdl_info(urls)
+	if ytbulk:
+		info = process_ytbulk(ytbulk)
+	else:
+		if not urls:
+			urls = collect_urls()
+		info = get_ytdl_info(urls)
 	process_urls(info, regex = regex)
 
 if __name__ == '__main__':

@@ -277,7 +277,7 @@ def process_urls(regex = None) -> None:
 		else:
 			infos_working.append((info, request, found_title))
 			print(f'This PV {colorama.Fore.RED}has not been added {colorama.Fore.RESET}to the database yet')
-			print(f'Add it? {colorama.Fore.CYAN}{SC.h_server}/Song/Create?pvUrl={info["webpage_url"]}')
+			print(f'Create a new entry? {colorama.Fore.CYAN}{SC.h_server}/Song/Create?pvUrl={info["webpage_url"]}')
 			print()
 
 			# for the purpose of delete_cache; this should not be an actual request
@@ -348,6 +348,7 @@ def process_urls(regex = None) -> None:
 							print_e(f'{colorama.Fore.RED}Not a valid choice')
 				if match_n == 0:
 					print(f'{colorama.Fore.RED}Skipped')
+					print(f'Create a new entry? {colorama.Fore.CYAN}{SC.h_server}/Song/Create?pvUrl={info["webpage_url"]}')
 					break
 				if match_n < 0:
 					song_id = match_n * -1
@@ -441,6 +442,7 @@ def process_urls(regex = None) -> None:
 				i = prompt_toolkit.prompt('Search by name, or enter "." to skip this entry: ', default = found_title or request.json()['title'])
 				if i == '.':
 					print(f'{colorama.Fore.RED}Skipped')
+					print(f'Create a new entry? {colorama.Fore.CYAN}{SC.h_server}/Song/Create?pvUrl={info["webpage_url"]}')
 					break
 				request = session.get(
 					f'{SC.h_server}/api/songs/findDuplicate',

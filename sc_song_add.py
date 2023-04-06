@@ -244,10 +244,30 @@ def process_ytbulk(filename):
 			})
 	return infos
 
+def lookup_url(info, found_title = None):
+	''''''
+
+	# undocumented api
+	# https://vocadb.net/Song/Create?pvUrl=$foo
+	request = session.get(
+		f'{SC.h_server}/api/songs/findDuplicate',
+		params = {
+			'term[]': (found_title or ''),
+			'pv[]': info['webpage_url'],
+			'getPVInfo': True,
+		}
+	)
+
+	# for debug: dump request
+	#print(request.url)
+	#print_p(request.json())
+
+	return request
+
 def process_urls(infos, regex = None) -> None:
 	''''''
 
-	print_e(f'Searching with {SC.server}')
+	print_e(f'Looking up in {SC.server}')
 	infos_working = []
 	for i, info in enumerate(infos):
 		print(f'{colorama.Fore.YELLOW}{i + 1} / {len(infos)}')
@@ -266,28 +286,16 @@ def process_urls(infos, regex = None) -> None:
 		found_title = (re.search(re.compile(regex), info['title']) if regex else found_title)
 		found_title = (found_title.group(1) if found_title else found_title)
 
-		filename_pickle = sys.argv[0] + '.api-songs-findDuplicate.pickle'
-		# undocumented api
-		# https://vocadb.net/Song/Create?pvUrl=$foo
-		request = disk_cache_decorator(filename_pickle)(session.get)(
-			f'{SC.h_server}/api/songs/findDuplicate',
-			params = {
-				'term[]': (found_title or ''),
-				'pv[]': info['webpage_url'],
-				'getPVInfo': True,
-			}
-		)
-
-		# for debug: dump request
-		#print(request.url)
-		#print_p(request.json())
-
 		pv_added = False
+		filename_pickle = sys.argv[0] + '.api-song-lookup.pickle'
+
+		request = disk_cache_decorator(filename_pickle)(lookup_url)(info, found_title = found_title)
 		if request.json()['matches']:
 			for entry in request.json()['matches']:
 				if entry['matchProperty'] == 'PV':
 					pv_added = True
 					break
+
 		if pv_added:
 			song_id = request.json()['matches'][0]['entry']['id']
 			print(f'This PV {colorama.Fore.GREEN}has already been added {colorama.Fore.RESET}to the database.')
@@ -299,29 +307,53 @@ def process_urls(infos, regex = None) -> None:
 				)
 			)
 			print()
+			continue
+
+		# look for additional urls (「○○より転載」)
+		# XXX: maybe the original video is in vocadb but the found video is not in vocadb. always look all of these up?
+		found_url_infos = []
+		for match in re.finditer(r'https?://(www\.|)nicovideo\.jp/watch/[snm0-9]+', info['description']):
+			found_url_infos.append({
+				'title': info['title'],
+				'webpage_url': match.group(0),
+			})
+
+		for found_url_info in found_url_infos:
+			found_url_request = disk_cache_decorator(filename_pickle)(lookup_url)(found_url_info, found_title = found_title)
+			if found_url_request.json()['matches']:
+				for entry in found_url_request.json()['matches']:
+					if entry['matchProperty'] == 'PV':
+						pv_added = True
+						break
+
+		if pv_added:
+			infos_working.append((info, request, found_title, found_url_request))
+			print(f'This PV {colorama.Fore.RED}has not been added {colorama.Fore.RESET}to the database yet')
+			print(f'A PV in the video description {colorama.Fore.YELLOW}has been added {colorama.Fore.RESET}to the database')
+			print()
+
+			# delete failed lookup from cache
+			disk_cache_decorator(filename_pickle, delete_cache = True)(lookup_url)(info, found_title = found_title)
+			disk_cache_decorator(filename_pickle, delete_cache = True)(lookup_url)(found_url_info, found_title = found_title)
 		else:
-			infos_working.append((info, request, found_title))
+			infos_working.append((info, request, found_title, False))
 			print(f'This PV {colorama.Fore.RED}has not been added {colorama.Fore.RESET}to the database yet')
 			print(f'Create a new entry? {colorama.Fore.CYAN}{SC.h_server}/Song/Create?pvUrl={info["webpage_url"]}')
 			print()
 
-			# for the purpose of delete_cache; this should not be an actual request
-			_ = disk_cache_decorator(filename_pickle, delete_cache = True)(session.get)(
-				f'{SC.h_server}/api/songs/findDuplicate',
-				params = {
-					'term[]': (found_title or ''),
-					'pv[]': info['webpage_url'],
-					'getPVInfo': True,
-				}
-			)
+			# delete failed lookup from cache
+			disk_cache_decorator(filename_pickle, delete_cache = True)(lookup_url)(info, found_title = found_title)
 
 	print('----')
 
 	i_infos = 1
-	for info, request, found_title in infos_working:
+	for info, request, found_title, found_url_request in infos_working:
 		print()
 		print(f'{colorama.Fore.YELLOW}{i_infos} / {len(infos_working)}')
 		print(pretty_youtubedl_info(info))
+
+		if found_url_request:
+			request = found_url_request
 
 		while True:
 			for i in range(len(request.json()['matches'])):
@@ -339,7 +371,10 @@ def process_urls(infos, regex = None) -> None:
 			# - get upset if a match is a PV match (which happens when I manually add a PV behind the script's back)
 
 			if request.json()['matches']:
-				print(f'{colorama.Fore.YELLOW}Match potentially found')
+				if found_url_request:
+					print(f'{colorama.Fore.YELLOW}Match potentially found, using video description')
+				else:
+					print(f'{colorama.Fore.YELLOW}Match potentially found')
 
 				match_n = 1
 				while True:

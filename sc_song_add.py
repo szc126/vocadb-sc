@@ -502,8 +502,8 @@ def process_urls(infos, regex = None) -> None:
 				print(f'{colorama.Fore.YELLOW}Match not found' + (f'{colorama.Fore.RESET} ({found_title})' if found_title else ''))
 				# undocumented api
 				# https://vocadb.net/Song/Create?pvUrl=$foo
-				i = prompt_toolkit.prompt('Search by name, or enter "." to skip this entry: ', default = found_title or request.json()['title'])
-				if i == '.':
+				i = prompt_toolkit.prompt('Search by name, or just press "Enter" to skip this entry: ', default = found_title or request.json()['title'])
+				if i == (found_title or request.json()['title']) or i == '':
 					print(f'{colorama.Fore.RED}Skipped')
 					print(f'Create a new entry? {colorama.Fore.CYAN}{SC.h_server}/Song/Create?pvUrl={info["webpage_url"]}')
 					break

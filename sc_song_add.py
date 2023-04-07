@@ -226,9 +226,12 @@ def get_ytdl_info(urls):
 	return infos
 
 def process_ytbulk(filename):
+	''''''
+
 	infos = []
 	with open(filename, 'r') as file:
 		data = json.load(file)
+		data = data['playliststart' in ytdl_config and ytdl_config['playliststart'] or None : 'playlistend' in ytdl_config and ytdl_config['playlistend'] or None]
 		for video in data:
 			infos.append({
 				'title': video['snippet']['title'],

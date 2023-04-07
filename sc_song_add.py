@@ -72,7 +72,7 @@ class SCUserGroupIds:
 			'Limited': self.LIMITED,
 			'Regular': self.REGULAR,
 			'Trusted': self.TRUSTED,
-			'Mod': self.MOD,
+			'Moderator': self.MOD,
 			'Admin': self.ADMIN,
 		}[string]
 class SC:

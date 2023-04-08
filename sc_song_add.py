@@ -131,7 +131,7 @@ def login() -> bool:
 	if not netrc_auth:
 		raise LookupError(f'Could not find the {SC.server} machine in .netrc')
 
-	print_e(f'Logging in to {colorama.Fore.CYAN}{SC.server}')
+	print(f'Logging in to {colorama.Fore.CYAN}{SC.server}')
 	_ = session.get(
 		f'{SC.h_server}/api/antiforgery/token'
 	)
@@ -151,7 +151,7 @@ def login() -> bool:
 			f'Verification failed. HTTP status code {request.status_code}' +
 			'\n- ' + '\n- '.join(request.json()['errors'][''])
 		)
-	print_e(f'{colorama.Fore.GREEN}Login successful')
+	print(f'{colorama.Fore.GREEN}Login successful')
 	return True
 
 def verify_login_status(exception = True) -> bool:
@@ -159,7 +159,7 @@ def verify_login_status(exception = True) -> bool:
 
 	Record user group ID.'''
 
-	print_e(f'Verifying login status for {colorama.Fore.CYAN}{SC.server}')
+	print(f'Verifying login status for {colorama.Fore.CYAN}{SC.server}')
 	request = session.get(
 		f'{SC.h_server}/api/users/current',
 	)
@@ -167,12 +167,12 @@ def verify_login_status(exception = True) -> bool:
 		if exception:
 			raise ValueError(f'Verification failed. HTTP status code {request.status_code}')
 		else:
-			print_e(f'{colorama.Fore.RED}Verification failed. HTTP status code {request.status_code}')
+			print(f'{colorama.Fore.RED}Verification failed. HTTP status code {request.status_code}')
 			return False
 
 	SC.user_group_id = SC.user_group_ids.from_str(request.json()['groupId'])
 
-	print_e(f'{colorama.Fore.GREEN}Logged in{colorama.Fore.RESET} as {colorama.Fore.CYAN}' + request.json()['name'])
+	print(f'{colorama.Fore.GREEN}Logged in{colorama.Fore.RESET} as {colorama.Fore.CYAN}' + request.json()['name'])
 	return True
 
 def save_cookies() -> bool:
@@ -181,7 +181,7 @@ def save_cookies() -> bool:
 	filename = sys.argv[0] + '.cookies' + '.' + SC.server + '.pickle'
 	with open(filename, 'wb') as file:
 		pickle.dump(session.cookies, file)
-	print_e(f'{colorama.Fore.GREEN}Cookies saved{colorama.Fore.RESET} to {colorama.Fore.CYAN}{filename}')
+	print(f'{colorama.Fore.GREEN}Cookies saved{colorama.Fore.RESET} to {colorama.Fore.CYAN}{filename}')
 	return True
 
 def load_cookies() -> bool:
@@ -191,13 +191,13 @@ def load_cookies() -> bool:
 		filename = sys.argv[0] + '.cookies' + '.' + SC.server + '.pickle'
 		with open(filename, 'rb') as file:
 			session.cookies.update(pickle.load(file))
-		print_e(f'{colorama.Fore.GREEN}Cookies loaded{colorama.Fore.RESET} from {colorama.Fore.CYAN}{filename}')
+		print(f'{colorama.Fore.GREEN}Cookies loaded{colorama.Fore.RESET} from {colorama.Fore.CYAN}{filename}')
 		return True
 	except FileNotFoundError:
-		print_e(f'{colorama.Fore.RED}Cookies not found')
+		print(f'{colorama.Fore.RED}Cookies not found')
 		return False
 	except pickle.UnpicklingError:
-		print_e(f'{colorama.Fore.RED}Failed to decode cookies')
+		print(f'{colorama.Fore.RED}Failed to decode cookies')
 		return False
 
 # ----
@@ -206,7 +206,7 @@ def collect_urls() -> None:
 	'''Collect URLs from standard input.'''
 
 	urls = []
-	print_e('Enter URLs, one per line. Enter "." when done.')
+	print('Enter URLs, one per line. Enter "." when done.')
 	while True:
 		i = input()
 		if i == '.':
@@ -220,7 +220,7 @@ def get_ytdl_info(urls):
 	''''''
 
 	infos = []
-	print_e('Fetching video information')
+	print('Fetching video information')
 	with yt_dlp.YoutubeDL(ytdl_config) as ytdl:
 		for url in urls:
 			filename_pickle = sys.argv[0] + '.ytdl_extract_info.' + (str('playliststart' in ytdl_config and ytdl_config['playliststart'] or '')) + '-' + (str('playlistend' in ytdl_config and ytdl_config['playlistend'] or '')) + '.pickle' # ytdl_config differences are invisible to disk_cache_decorator()
@@ -274,7 +274,7 @@ def lookup_url(info, found_title = None):
 def process_urls(infos, regex = None) -> None:
 	''''''
 
-	print_e(f'Looking up in {SC.server}')
+	print(f'Looking up in {SC.server}')
 	infos_working = []
 	for i, info in enumerate(infos):
 		print(f'{colorama.Fore.YELLOW}{i + 1} / {len(infos)}')
@@ -393,7 +393,7 @@ def process_urls(infos, regex = None) -> None:
 							match_n = int(i[1:]) * -1 # ID as a negative integer
 							break
 						except ValueError:
-							print_e(f'{colorama.Fore.RED}Not a valid choice')
+							print(f'{colorama.Fore.RED}Not a valid choice')
 					elif i == '.':
 						match_n = 0
 						break
@@ -410,9 +410,9 @@ def process_urls(infos, regex = None) -> None:
 							if input('Is this correct? [Y/n] ').casefold() != 'n':
 								break
 						except ValueError:
-							print_e(f'{colorama.Fore.RED}Not a valid choice')
+							print(f'{colorama.Fore.RED}Not a valid choice')
 						except IndexError:
-							print_e(f'{colorama.Fore.RED}Not a valid choice')
+							print(f'{colorama.Fore.RED}Not a valid choice')
 				if match_n == 0:
 					print(f'{colorama.Fore.RED}Skipped')
 					print(f'Create a new entry? {colorama.Fore.CYAN}{SC.h_server}/Song/Create?pvUrl={info["webpage_url"]}')
@@ -438,7 +438,7 @@ def process_urls(infos, regex = None) -> None:
 							if input(f'{colorama.Fore.CYAN}{pv_type}{colorama.Fore.RESET}. Is this correct? [Y/n] ').casefold() != 'n':
 								break
 						except ValueError:
-							print_e(f'{colorama.Fore.RED}Not a valid choice')
+							print(f'{colorama.Fore.RED}Not a valid choice')
 
 				# undocumented api
 				request_entry_data = session.get(

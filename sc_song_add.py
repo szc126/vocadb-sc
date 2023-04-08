@@ -310,7 +310,7 @@ def process_urls(infos, regex = None) -> None:
 				re.sub(
 					r'(^|\n)',
 					r'\1  ',
-					pretty_pv_match_entry(request.json()['matches'][0]['entry'])
+					pretty_pv_match_entry(request.json()['matches'][0])
 				)
 			)
 			print()
@@ -369,7 +369,7 @@ def process_urls(infos, regex = None) -> None:
 					re.sub(
 						r'(^|\n)',
 						r'\1  ',
-						pretty_pv_match_entry(request.json()['matches'][i]['entry'])
+						pretty_pv_match_entry(request.json()['matches'][i])
 					)
 				)
 			print()
@@ -404,7 +404,7 @@ def process_urls(infos, regex = None) -> None:
 								re.sub(
 									r'(^|\n)',
 									r'\1  ',
-									pretty_pv_match_entry(request.json()['matches'][match_n - 1]['entry'])
+									pretty_pv_match_entry(request.json()['matches'][match_n - 1])
 								)
 							)
 							if input('Is this correct? [Y/n] ').casefold() != 'n':
@@ -539,21 +539,25 @@ def recursive_get_ytdl_individual_info(info) -> list:
 	else:
 		return [info]
 
-def pretty_pv_match_entry(entry):
+def pretty_pv_match_entry(match):
 	'''Format the data returned by /api/songs/findDuplicate.'''
 	# saner than a print() (unless you like keys ordered alphabetically)
 	# and add a link to *db.net/S/ as well
 
-	display_name = entry['name']['displayName']
-	additional_names = entry['name']['additionalNames']
-	artist_string = entry['artistString']
-	url_db_s = SC.h_server + '/S/' + str(entry['id'])
-	entry_type_name = entry['entryTypeName']
+	display_name = match['entry']['name']['displayName']
+	additional_names = match['entry']['name']['additionalNames']
+	artist_string = match['entry']['artistString']
+	url_db_s = SC.h_server + '/S/' + str(match['entry']['id'])
+	entry_type_name = match['entry']['entryTypeName']
+	match_property = match['matchProperty']
+
+	if match_property == 'PV':
+		match_property = colorama.Fore.GREEN + match_property + ' \U0001f517' + colorama.Fore.RESET
 
 	return '\n'.join(filter(None, [
-		colorama.Fore.CYAN + display_name + (colorama.Fore.MAGENTA + ' // ' + colorama.Fore.RESET + additional_names if additional_names else ''),
-		colorama.Fore.RESET + artist_string,
-		colorama.Fore.BLUE + url_db_s + colorama.Fore.MAGENTA + ' // ' + colorama.Fore.RESET + entry_type_name,
+		colorama.Fore.CYAN + display_name + (colorama.Fore.MAGENTA + ' // ' + colorama.Fore.RESET + additional_names if additional_names else '') + colorama.Fore.RESET,
+		artist_string + colorama.Fore.MAGENTA + ' // ' + colorama.Fore.RESET + entry_type_name,
+		colorama.Fore.BLUE + url_db_s + colorama.Fore.MAGENTA + ' // ' + colorama.Fore.RESET + match_property,
 	]))
 
 def pretty_youtubedl_info(info):

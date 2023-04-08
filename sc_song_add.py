@@ -313,7 +313,8 @@ def process_urls(infos, regex = None) -> None:
 		# look for additional urls (「○○より転載」)
 		# XXX: maybe the original video is in vocadb but the found video is not in vocadb. always look all of these up?
 		found_url_infos = []
-		for match in re.finditer(r'https?://(?:www\.|)nicovideo\.jp/watch/[sn]m[0-9]+|\b[sn]m[0-9]+', info['description']):
+		# `\b` is not appropriate for CJK like 'ニコ動sm9'
+		for match in re.finditer(r'https?://(?:www\.|)nicovideo\.jp/watch/[sn]m[0-9]+|\b[sn]m[0-9]+|(?<=[^A-Za-z])[sn]m[0-9]+', info['description']):
 			found_url_infos.append({
 				'title': info['title'],
 				'webpage_url': (not match.group(0).startswith('http') and 'https://www.nicovideo.jp/watch/' or '') + match.group(0),
@@ -333,17 +334,21 @@ def process_urls(infos, regex = None) -> None:
 			print(f'A PV in the video description {colorama.Fore.YELLOW}is registered.')
 			print()
 
-			# delete failed lookup from cache
+			# delete failed lookup from cache: re-lookup URL on next launch
 			disk_cache_decorator(filename_pickle, delete_cache = True)(lookup_url)(info, title = found_title)
-			disk_cache_decorator(filename_pickle, delete_cache = True)(lookup_url)(found_url_info, title = found_title)
 		else:
 			infos_working.append((info, request, found_title, False))
 			print(f'This PV {colorama.Fore.RED}is not registered.')
 			print(f'Create a new entry? {colorama.Fore.CYAN}{SC.h_server}/Song/Create?pvUrl={info["webpage_url"]}')
+			if found_url_infos:
+				print(f'A PV in the video description {colorama.Fore.RED}is not registered.')
+				print(f'Create a new entry? {colorama.Fore.CYAN}{SC.h_server}/Song/Create?pvUrl={found_url_info["webpage_url"]}')
 			print()
 
-			# delete failed lookup from cache
+			# delete failed lookup from cache: re-lookup URL on next launch
 			disk_cache_decorator(filename_pickle, delete_cache = True)(lookup_url)(info, title = found_title)
+			if found_url_infos:
+				disk_cache_decorator(filename_pickle, delete_cache = True)(lookup_url)(found_url_info, title = found_title)
 
 	print('----')
 

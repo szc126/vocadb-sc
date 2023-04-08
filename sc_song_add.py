@@ -319,10 +319,10 @@ def process_urls(infos, regex = None) -> None:
 		# look for additional urls (「○○より転載」)
 		# XXX: maybe the original video is in vocadb but the found video is not in vocadb. always look all of these up?
 		found_url_infos = []
-		for match in re.finditer(r'https?://(www\.|)nicovideo\.jp/watch/[snm0-9]+', info['description']):
+		for match in re.finditer(r'https?://(?:www\.|)nicovideo\.jp/watch/[sn]m[0-9]+|\b[sn]m[0-9]+', info['description']):
 			found_url_infos.append({
 				'title': info['title'],
-				'webpage_url': match.group(0),
+				'webpage_url': (not match.group(0).startswith('http') and 'https://www.nicovideo.jp/watch/' or '') + match.group(0),
 			})
 
 		for found_url_info in found_url_infos:

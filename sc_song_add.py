@@ -251,7 +251,7 @@ def process_ytbulk(filename):
 			})
 	return infos
 
-def lookup_url(info, found_title = None):
+def lookup_url(info, title = None):
 	''''''
 
 	# undocumented api
@@ -259,7 +259,7 @@ def lookup_url(info, found_title = None):
 	request = session.get(
 		f'{SC.h_server}/api/songs/findDuplicate',
 		params = {
-			'term[]': (found_title or ''),
+			'term[]': (title or ''),
 			'pv[]': info['webpage_url'],
 			'getPVInfo': True,
 		}
@@ -296,7 +296,7 @@ def process_urls(infos, regex = None) -> None:
 		pv_added = False
 		filename_pickle = sys.argv[0] + '.api-song-lookup.pickle'
 
-		request = disk_cache_decorator(filename_pickle)(lookup_url)(info, found_title = found_title)
+		request = disk_cache_decorator(filename_pickle)(lookup_url)(info, title = found_title)
 		if request.json()['matches']:
 			for entry in request.json()['matches']:
 				if entry['matchProperty'] == 'PV':
@@ -320,7 +320,7 @@ def process_urls(infos, regex = None) -> None:
 			})
 
 		for found_url_info in found_url_infos:
-			found_url_request = disk_cache_decorator(filename_pickle)(lookup_url)(found_url_info, found_title = found_title)
+			found_url_request = disk_cache_decorator(filename_pickle)(lookup_url)(found_url_info, title = found_title)
 			if found_url_request.json()['matches']:
 				for entry in found_url_request.json()['matches']:
 					if entry['matchProperty'] == 'PV':
@@ -334,8 +334,8 @@ def process_urls(infos, regex = None) -> None:
 			print()
 
 			# delete failed lookup from cache
-			disk_cache_decorator(filename_pickle, delete_cache = True)(lookup_url)(info, found_title = found_title)
-			disk_cache_decorator(filename_pickle, delete_cache = True)(lookup_url)(found_url_info, found_title = found_title)
+			disk_cache_decorator(filename_pickle, delete_cache = True)(lookup_url)(info, title = found_title)
+			disk_cache_decorator(filename_pickle, delete_cache = True)(lookup_url)(found_url_info, title = found_title)
 		else:
 			infos_working.append((info, request, found_title, False))
 			print(f'This PV {colorama.Fore.RED}has not been added {colorama.Fore.RESET}to the database yet')
@@ -343,7 +343,7 @@ def process_urls(infos, regex = None) -> None:
 			print()
 
 			# delete failed lookup from cache
-			disk_cache_decorator(filename_pickle, delete_cache = True)(lookup_url)(info, found_title = found_title)
+			disk_cache_decorator(filename_pickle, delete_cache = True)(lookup_url)(info, title = found_title)
 
 	print('----')
 
@@ -485,21 +485,12 @@ def process_urls(infos, regex = None) -> None:
 				break
 			else:
 				print(f'{colorama.Fore.YELLOW}Match not found' + (f'{colorama.Fore.RESET} ({found_title})' if found_title else ''))
-				# undocumented api
-				# https://vocadb.net/Song/Create?pvUrl=$foo
 				i = prompt_toolkit.prompt('Search by name, or add "." to skip this entry: ', default = found_title or request.json()['title'])
 				if i == (found_title or request.json()['title']) + '.' or i == '':
 					print(f'{colorama.Fore.RED}Skipped')
 					print(f'Create a new entry? {colorama.Fore.CYAN}{SC.h_server}/Song/Create?pvUrl={info["webpage_url"]}')
 					break
-				request = session.get(
-					f'{SC.h_server}/api/songs/findDuplicate',
-					params = {
-						'term[]': i,
-						'pv[]': info['webpage_url'],
-						'getPVInfo': True,
-					}
-				)
+				request = lookup_url(info, title = i)
 		i_infos += 1
 	print()
 	print(f'{colorama.Fore.GREEN}Batch complete')

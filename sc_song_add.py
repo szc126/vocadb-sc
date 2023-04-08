@@ -572,11 +572,11 @@ def pretty_youtubedl_info(info):
 
 	return '\n'.join(filter(None, [
 		colorama.Fore.CYAN + title + (colorama.Fore.MAGENTA + ' // ' + colorama.Fore.RESET + duration if duration else ''),
-		colorama.Fore.RESET + uploader,
-		colorama.Fore.BLUE + webpage_url + (colorama.Fore.MAGENTA + ' // ' + colorama.Fore.RESET + upload_date if upload_date else ''),
+		colorama.Fore.RESET + uploader + (colorama.Fore.MAGENTA + ' // ' + colorama.Fore.RESET + upload_date if upload_date else ''),
+		colorama.Fore.BLUE + webpage_url,
 		(
-			colorama.Fore.RESET + '----' + '\n' +
-			colorama.Fore.BLUE + description
+			colorama.Fore.RESET + '  ----' + '\n' +
+			colorama.Fore.BLUE + '  ' + description.replace('\n', '\n  ')
 		) if description else (
 			''
 		),

@@ -6,12 +6,16 @@ TODO:
 	- what happens in an edit conflict?
 	- 'it is an original pv because the producer was detected as the uploader'
 		- FALSE, it may be a false positive, such as with a bad parsing of '鏡音リン・レン'
+		- 2023/04/07: ?? what does this mean.
 	- new flag 'do not ask me if this is a reprint, i told you these are reprints and that will be correct 100% of the time'
 	- allow to search by name more than once even if successful (fixing typo, trying with a different form, ...)
 	- don't ask if the pv type is right before asking; ask for a choice 1 2 3, with a default
 	- add progress indicator (where?)
 	- why did i want to print to stderr? i forget
 	- (maybe?) regex with named groups for vocalist too
+	- check against video length instead of / in addition to entry recorded length?
+	- check if reprint/other is earlier than entry recorded publish date (automatic ng)
+	- "ignore this song permanently. forever."
 
 PATH FROM HERE:
 	- manual intervention

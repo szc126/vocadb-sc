@@ -306,13 +306,7 @@ def process_urls(infos, regex = None) -> None:
 		if pv_added:
 			song_id = request.json()['matches'][0]['entry']['id']
 			print(f'This PV {colorama.Fore.GREEN}has already been added {colorama.Fore.RESET}to the database.')
-			print(
-				re.sub(
-					r'(^|\n)',
-					r'\1  ',
-					pretty_pv_match_entry(request.json()['matches'][0])
-				)
-			)
+			print('  ' + pretty_pv_match_entry(request.json()['matches'][0]).replace('\n', '\n  '))
 			print()
 			continue
 
@@ -365,13 +359,7 @@ def process_urls(infos, regex = None) -> None:
 		while True:
 			for i in range(len(request.json()['matches'])):
 				print(f'{colorama.Fore.YELLOW}{i + 1}')
-				print(
-					re.sub(
-						r'(^|\n)',
-						r'\1  ',
-						pretty_pv_match_entry(request.json()['matches'][i])
-					)
-				)
+				print('  ' + pretty_pv_match_entry(request.json()['matches'][i]).replace('\n', '\n  '))
 			print()
 
 			# TODO:
@@ -400,13 +388,7 @@ def process_urls(infos, regex = None) -> None:
 					else:
 						try:
 							match_n = int(i)
-							print(
-								re.sub(
-									r'(^|\n)',
-									r'\1  ',
-									pretty_pv_match_entry(request.json()['matches'][match_n - 1])
-								)
-							)
+							print('  ' + pretty_pv_match_entry(request.json()['matches'][match_n - 1]).replace('\n', '\n  '))
 							if input('Is this correct? [Y/n] ').casefold() != 'n':
 								break
 						except ValueError:

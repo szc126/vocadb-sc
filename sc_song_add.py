@@ -357,8 +357,8 @@ def process_urls(infos, regex = None) -> None:
 			request = found_url_request
 
 		while True:
-			for i in range(len(request.json()['matches'])):
-				print(colorama.Fore.YELLOW + str(i + 1).ljust(3) + pretty_pv_match_entry(request.json()['matches'][i]).replace('\n', '\n    '))
+			for i, match in enumerate(request.json()['matches']):
+				print(colorama.Fore.YELLOW + str(i + 1).ljust(3) + pretty_pv_match_entry(match).replace('\n', '\n   '))
 			print()
 
 			# TODO:

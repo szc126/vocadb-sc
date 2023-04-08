@@ -148,10 +148,10 @@ def login() -> bool:
 
 	if request.status_code != 204:
 		raise ValueError(
-			f'Verification failed. HTTP status code {request.status_code}' +
+			f'Login failed. HTTP status code {request.status_code}' +
 			'\n- ' + '\n- '.join(request.json()['errors'][''])
 		)
-	print(f'{colorama.Fore.GREEN}Login successful')
+	print(f'{colorama.Fore.GREEN}Logged in')
 	return True
 
 def verify_login_status(exception = True) -> bool:
@@ -165,9 +165,9 @@ def verify_login_status(exception = True) -> bool:
 	)
 	if request.status_code != 200:
 		if exception:
-			raise ValueError(f'Verification failed. HTTP status code {request.status_code}')
+			raise ValueError(f'Login failed. HTTP status code {request.status_code}')
 		else:
-			print(f'{colorama.Fore.RED}Verification failed. HTTP status code {request.status_code}')
+			print(f'{colorama.Fore.RED}Login failed. HTTP status code {request.status_code}')
 			return False
 
 	SC.user_group_id = SC.user_group_ids.from_str(request.json()['groupId'])
@@ -181,7 +181,7 @@ def save_cookies() -> bool:
 	filename = sys.argv[0] + '.cookies' + '.' + SC.server + '.pickle'
 	with open(filename, 'wb') as file:
 		pickle.dump(session.cookies, file)
-	print(f'{colorama.Fore.GREEN}Cookies saved{colorama.Fore.RESET} to {colorama.Fore.CYAN}{filename}')
+	print(f'{colorama.Fore.GREEN}Saved cookies{colorama.Fore.RESET} to {colorama.Fore.CYAN}{filename}')
 	return True
 
 def load_cookies() -> bool:
@@ -191,13 +191,13 @@ def load_cookies() -> bool:
 		filename = sys.argv[0] + '.cookies' + '.' + SC.server + '.pickle'
 		with open(filename, 'rb') as file:
 			session.cookies.update(pickle.load(file))
-		print(f'{colorama.Fore.GREEN}Cookies loaded{colorama.Fore.RESET} from {colorama.Fore.CYAN}{filename}')
+		print(f'{colorama.Fore.GREEN}Loaded cookies{colorama.Fore.RESET} from {colorama.Fore.CYAN}{filename}')
 		return True
 	except FileNotFoundError:
-		print(f'{colorama.Fore.RED}Cookies not found')
+		print(f'{colorama.Fore.RED}Could not find cookies')
 		return False
 	except pickle.UnpicklingError:
-		print(f'{colorama.Fore.RED}Failed to decode cookies')
+		print(f'{colorama.Fore.RED}Could not read cookies')
 		return False
 
 # ----
@@ -206,7 +206,7 @@ def collect_urls() -> None:
 	'''Collect URLs from standard input.'''
 
 	urls = []
-	print('Enter URLs, one per line. Enter "." when done.')
+	print('Enter URLs (one per line). Enter "." when done.')
 	while True:
 		i = input()
 		if i == '.':
@@ -220,7 +220,7 @@ def get_ytdl_info(urls):
 	''''''
 
 	infos = []
-	print('Fetching video information')
+	print('Downloading URL metadata')
 	with yt_dlp.YoutubeDL(ytdl_config) as ytdl:
 		for url in urls:
 			filename_pickle = sys.argv[0] + '.ytdl_extract_info.' + (str('playliststart' in ytdl_config and ytdl_config['playliststart'] or '')) + '-' + (str('playlistend' in ytdl_config and ytdl_config['playlistend'] or '')) + '.pickle' # ytdl_config differences are invisible to disk_cache_decorator()
@@ -274,7 +274,7 @@ def lookup_url(info, title = None):
 def process_urls(infos, regex = None) -> None:
 	''''''
 
-	print(f'Looking up in {SC.server}')
+	print(f'Looking up in {colorama.Fore.CYAN}{SC.server}')
 	infos_working = []
 	for i, info in enumerate(infos):
 		print(f'{colorama.Fore.YELLOW}{i + 1} / {len(infos)}')
@@ -305,7 +305,7 @@ def process_urls(infos, regex = None) -> None:
 
 		if pv_added:
 			song_id = request.json()['matches'][0]['entry']['id']
-			print(f'This PV {colorama.Fore.GREEN}has already been added {colorama.Fore.RESET}to the database.')
+			print(f'This PV is {colorama.Fore.GREEN}registered.')
 			print('  ' + pretty_pv_match_entry(request.json()['matches'][0]).replace('\n', '\n  '))
 			print()
 			continue
@@ -329,8 +329,8 @@ def process_urls(infos, regex = None) -> None:
 
 		if pv_added:
 			infos_working.append((info, request, found_title, found_url_request))
-			print(f'This PV {colorama.Fore.RED}has not been added {colorama.Fore.RESET}to the database yet')
-			print(f'A PV in the video description {colorama.Fore.YELLOW}has been added {colorama.Fore.RESET}to the database')
+			print(f'This PV {colorama.Fore.RED}is not registered.')
+			print(f'A PV in the video description {colorama.Fore.YELLOW}is registered.')
 			print()
 
 			# delete failed lookup from cache
@@ -338,7 +338,7 @@ def process_urls(infos, regex = None) -> None:
 			disk_cache_decorator(filename_pickle, delete_cache = True)(lookup_url)(found_url_info, title = found_title)
 		else:
 			infos_working.append((info, request, found_title, False))
-			print(f'This PV {colorama.Fore.RED}has not been added {colorama.Fore.RESET}to the database yet')
+			print(f'This PV {colorama.Fore.RED}is not registered.')
 			print(f'Create a new entry? {colorama.Fore.CYAN}{SC.h_server}/Song/Create?pvUrl={info["webpage_url"]}')
 			print()
 
@@ -366,13 +366,13 @@ def process_urls(infos, regex = None) -> None:
 
 			if request.json()['matches']:
 				if found_url_request:
-					print(f'{colorama.Fore.YELLOW}Match potentially found, using video description')
+					print(f'{colorama.Fore.YELLOW}Found matches, {colorama.Fore.CYAN}using video description')
 				else:
-					print(f'{colorama.Fore.YELLOW}Match potentially found')
+					print(f'{colorama.Fore.YELLOW}Found matches')
 
 				match_n = 1
 				while True:
-					i = input('Choose match [1/...], or enter "s<song ID>", or enter "." to skip this entry: ')
+					i = input('Choose match [1/...], or enter "s<song ID>", or enter "." to skip this URL: ')
 					if i == '':
 						break
 					elif i[0] == 's':
@@ -380,7 +380,7 @@ def process_urls(infos, regex = None) -> None:
 							match_n = int(i[1:]) * -1 # ID as a negative integer
 							break
 						except ValueError:
-							print(f'{colorama.Fore.RED}Not a valid choice')
+							print(f'{colorama.Fore.RED}Invalid choice')
 					elif i == '.':
 						match_n = 0
 						break
@@ -391,9 +391,9 @@ def process_urls(infos, regex = None) -> None:
 							if input('Is this correct? [Y/n] ').casefold() != 'n':
 								break
 						except ValueError:
-							print(f'{colorama.Fore.RED}Not a valid choice')
+							print(f'{colorama.Fore.RED}Invalid choice')
 						except IndexError:
-							print(f'{colorama.Fore.RED}Not a valid choice')
+							print(f'{colorama.Fore.RED}Invalid choice')
 				if match_n == 0:
 					print(f'{colorama.Fore.RED}Skipped')
 					print(f'Create a new entry? {colorama.Fore.CYAN}{SC.h_server}/Song/Create?pvUrl={info["webpage_url"]}')
@@ -419,7 +419,7 @@ def process_urls(infos, regex = None) -> None:
 							if input(f'{colorama.Fore.CYAN}{pv_type}{colorama.Fore.RESET}. Is this correct? [Y/n] ').casefold() != 'n':
 								break
 						except ValueError:
-							print(f'{colorama.Fore.RED}Not a valid choice')
+							print(f'{colorama.Fore.RED}Invalid choice')
 
 				# undocumented api
 				request_entry_data = session.get(
@@ -448,10 +448,10 @@ def process_urls(infos, regex = None) -> None:
 
 				if request_entry_data.json()['lengthSeconds'] > 0 and not math.isclose(request_pv_data.json()['length'], request_entry_data.json()['lengthSeconds'], abs_tol = 2):
 					if input(
-							f'{colorama.Fore.YELLOW}Track length appears to be substantially different.' +
-							f'{colorama.Fore.RESET} (' +
+							f'{colorama.Fore.YELLOW}Track length does not match.' +
+							f'{colorama.Fore.RESET} (PV: ' +
 							colorama.Fore.CYAN + pretty_duration(request_pv_data.json()['length']) +
-							f'{colorama.Fore.RESET} and not ' +
+							f'{colorama.Fore.RESET}, entry:' +
 							colorama.Fore.CYAN + pretty_duration(request_entry_data.json()['lengthSeconds']) +
 							f'{colorama.Fore.RESET}) Skip this entry? [y/N] '
 					).casefold() != 'n':
@@ -477,23 +477,25 @@ def process_urls(infos, regex = None) -> None:
 				)
 
 				if request_save.status_code == 200:
-					print(f'{colorama.Fore.GREEN}Success{colorama.Fore.RESET}; {colorama.Fore.CYAN}{SC.h_server}/S/{song_id}')
+					print(f'{colorama.Fore.GREEN}Saved{colorama.Fore.RESET}: {colorama.Fore.CYAN}{SC.h_server}/S/{song_id}')
 				else:
 					print_p(entry_data_modified)
-					raise ValueError(f'Failed to save. HTTP status code {request_save.status_code}')
+					raise ValueError(f'Save failed. HTTP status code {request_save.status_code}')
 
 				break
 			else:
-				print(f'{colorama.Fore.YELLOW}Match not found' + (f'{colorama.Fore.RESET} ({found_title})' if found_title else ''))
+				print(f'{colorama.Fore.YELLOW}No matches' + (f'{colorama.Fore.RESET} for {colorama.Fore.CYAN}{found_title}.' if found_title else ''))
 				i = prompt_toolkit.prompt('Search by name, or add "." to skip this entry: ', default = found_title or request.json()['title'])
 				if i == (found_title or request.json()['title']) + '.' or i == '':
 					print(f'{colorama.Fore.RED}Skipped')
 					print(f'Create a new entry? {colorama.Fore.CYAN}{SC.h_server}/Song/Create?pvUrl={info["webpage_url"]}')
 					break
 				request = lookup_url(info, title = i)
+				# found_title is no longer relevant. don't print it a second time
+				found_title = i
 		i_infos += 1
 	print()
-	print(f'{colorama.Fore.GREEN}Batch complete')
+	print(f'All URLs have been {colorama.Fore.GREEN}processed.')
 
 def recursive_get_ytdl_individual_info(info) -> list:
 	'''Helper for flattening nested youtube-dl playlists.'''

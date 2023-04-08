@@ -203,7 +203,7 @@ def load_cookies() -> bool:
 # ----
 
 def collect_urls() -> None:
-	'''Collect URLS from standard input.'''
+	'''Collect URLs from standard input.'''
 
 	urls = []
 	print_e('Enter URLs, one per line. Enter "." when done.')
@@ -282,9 +282,9 @@ def process_urls(infos, regex = None) -> None:
 		print(colorama.Fore.BLUE + info['webpage_url'])
 
 		# for debug: we don't need direct download urls
-		info.pop('formats', None)
-		info.pop('requested_formats', None)
-		info.pop('thumbnails', None)
+		#info.pop('formats', None)
+		#info.pop('requested_formats', None)
+		#info.pop('thumbnails', None)
 
 		# for debug: print the info
 		#print_p(info)
@@ -534,7 +534,7 @@ def recursive_get_ytdl_individual_info(info) -> list:
 				# as with deleted videos in a YouTube playlist
 				continue
 			else:
-				ret = ret + recursive_get_ytdl_individual_info(entry)
+				ret += recursive_get_ytdl_individual_info(entry)
 		return ret
 	else:
 		return [info]

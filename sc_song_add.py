@@ -585,31 +585,34 @@ def pretty_duration(seconds):
 
 # ----
 
-def main(server = None, pv_type = None, playliststart = None, playlistend = None, regex = None, urls = None, ytbulk = None):
-	SC.server = server or SC.server
-	SC.pv_type = pv_type or SC.pv_type
+def main(args):
+	SC.server = args.server or SC.server
+	SC.pv_type = args.pv_type or SC.pv_type
 
-	# youtube-dl won't accept None or False, complicating everything
-	if playliststart:
-		ytdl_config['playliststart'] = playliststart
-	if playlistend:
-		ytdl_config['playlistend'] = playlistend
+	# youtube-dl won't accept None or False :(
+	if args.list_from:
+		ytdl_config['playliststart'] = args.list_from
+	if args.list_to:
+		ytdl_config['playlistend'] = args.list_to
 
 	if not (load_cookies() and verify_login_status(exception = False)):
 		login()
 		verify_login_status(exception = True)
 		save_cookies()
+	print()
 
 	# ----
 
-	print()
-	if ytbulk:
-		info = process_ytbulk(ytbulk)
+	urls = args.urls
+	info = None
+
+	if args.ytbulk:
+		info = process_ytbulk(args.ytbulk)
 	else:
 		if not urls:
 			urls = collect_urls()
 		info = get_ytdl_info(urls)
-	process_urls(info, regex = regex)
+	process_urls(info, regex = args.regex)
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(
@@ -617,48 +620,47 @@ if __name__ == '__main__':
 	)
 	parser.add_argument(
 		'--server',
-		help = '',
+		help = 'server to connect to. default: ' + SC.server,
 	)
 	parser.add_argument(
-		'--pvtype',
+		'--pv-type',
 		dest = 'pv_type',
 		type = int,
-		help = 'Default PV type. ' + str(SC.pv_types.list) + ': 1, 2, 3',
+		choices = range(1, len(SC.pv_types.list) + 1),
+		help = 'default PV type. ' + str(list(enumerate(SC.pv_types.list, start = 1))),
 	)
 	parser.add_argument(
-		'--playliststart',
+		'--from',
+		'-f',
+		# https://stackoverflow.com/q/9746838
+		dest = 'list_from',
 		type = int,
-		help = 'youtube-dl: playliststart',
+		help = 'start from video N of a playlist (or channel)',
 	)
 	parser.add_argument(
-		'--playlistend',
+		'--to',
+		'-t',
+		dest = 'list_to',
 		type = int,
-		help = 'youtube-dl: playlistend',
+		help = 'stop before video N of a playlist (or channel)',
 	)
 	parser.add_argument(
 		'--regex',
-		help = 'Regular expression for the title. Accepts one capture group, which will be the title',
+		help = 'regular expression to parse a video title. accepts one capture group, which will be the title',
 	)
 	parser.add_argument(
 		'urls',
 		nargs = '*',
 		metavar = 'URL',
-		help = 'URL(s) to process.'
+		help = 'URL(s) to process'
 		# use '--' before an URL that begins with a hyphen
 		# https://docs.python.org/dev/library/argparse.html#arguments-containing
 	)
 	parser.add_argument(
 		'--ytbulk',
+		#type = argparse.FileType('r'),
 		help = 'videos.json to process, from https://mattw.io/youtube-metadata/bulk',
 	)
 	args = parser.parse_args()
 
-	main(
-		server = args.server,
-		pv_type = args.pv_type,
-		playliststart = args.playliststart,
-		playlistend = args.playlistend,
-		regex = args.regex,
-		urls = args.urls,
-		ytbulk = args.ytbulk,
-	)
+	main(args)

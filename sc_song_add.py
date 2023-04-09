@@ -216,8 +216,9 @@ def collect_urls() -> None:
 		urls.append(i)
 	return urls
 
-def get_ytdl_info(urls):
+def get_ytdl_info(urls, pattern_select = None, pattern_unselect = None):
 	''''''
+	# TODO: pattern_unselect
 
 	infos = []
 	print('Downloading URL metadata')
@@ -229,7 +230,7 @@ def get_ytdl_info(urls):
 		print()
 	return infos
 
-def process_ytbulk(filename):
+def process_ytbulk(filename, pattern_select = None, pattern_unselect = None):
 	''''''
 
 	infos = []
@@ -237,6 +238,12 @@ def process_ytbulk(filename):
 		data = json.load(file)
 		data = data['playliststart' in ytdl_config and ytdl_config['playliststart'] or None : 'playlistend' in ytdl_config and ytdl_config['playlistend'] or None]
 		for video in data:
+			if pattern_select and not re.search(pattern_select, video['snippet']['title']):
+				print('Unselected: ' + video['snippet']['title'])
+				continue
+			elif pattern_unselect and re.search(pattern_unselect, video['snippet']['title']):
+				print('Unselected: ' + video['snippet']['title'])
+				continue
 			infos.append({
 				'title': video['snippet']['title'],
 				'uploader': video['snippet']['channelTitle'],
@@ -271,7 +278,7 @@ def lookup_url(info, title = None):
 
 	return request
 
-def process_urls(infos, regex = None) -> None:
+def process_urls(infos, pattern_title = None) -> None:
 	''''''
 
 	print(f'Looking up in {colorama.Fore.CYAN}{SC.server}')
@@ -290,7 +297,7 @@ def process_urls(infos, regex = None) -> None:
 		#print_p(info)
 
 		found_title = None
-		found_title = (re.search(re.compile(regex), info['title']) if regex else found_title)
+		found_title = (re.search(re.compile(pattern_title), info['title']) if pattern_title else found_title)
 		found_title = (found_title.group(1) if found_title else found_title)
 
 		pv_added = False
@@ -590,12 +597,12 @@ def main(args):
 	info = None
 
 	if args.ytbulk:
-		info = process_ytbulk(args.ytbulk)
+		info = process_ytbulk(args.ytbulk, pattern_select = args.pattern_select, pattern_unselect = args.pattern_unselect)
 	else:
 		if not urls:
 			urls = collect_urls()
-		info = get_ytdl_info(urls)
-	process_urls(info, regex = args.regex)
+		info = get_ytdl_info(urls, pattern_select = args.pattern_select, pattern_unselect = args.pattern_unselect)
+	process_urls(info, pattern_title = args.pattern_title)
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(
@@ -628,8 +635,21 @@ if __name__ == '__main__':
 		help = 'stop before video N of a playlist (or channel)',
 	)
 	parser.add_argument(
-		'--regex',
-		help = 'regular expression to parse a video title. accepts one capture group, which will be the title',
+		'--parse',
+		'--title',
+		dest = 'pattern_title',
+		help = 'regular expression to parse a video title. accepts one capture group, which will be the title. example: /初音ミク　(.+)/ (without slash)',
+	)
+	parser.add_argument(
+		'--select',
+		dest = 'pattern_select',
+		help = 'regular expression to select by video title. --select has precedence over --unselect. example: /歌ってみた/ (without slash)',
+	)
+	parser.add_argument(
+		'--unselect',
+		'--deselect',
+		dest = 'pattern_unselect',
+		help = 'regular expression to unselect by video title. example: /(?i)mmd|mikumikudance|実況プレイ/ (without slash)',
 	)
 	parser.add_argument(
 		'urls',

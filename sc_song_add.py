@@ -467,9 +467,9 @@ def process_urls(infos, pattern_title = None) -> None:
 							f'{colorama.Fore.YELLOW}Track length does not match.' +
 							f'{colorama.Fore.RESET} (PV: ' +
 							colorama.Fore.CYAN + pretty_duration(request_pv_data.json()['length']) +
-							f'{colorama.Fore.RESET}, entry:' +
+							f'{colorama.Fore.RESET}, entry: ' +
 							colorama.Fore.CYAN + pretty_duration(request_entry_data.json()['lengthSeconds']) +
-							f'{colorama.Fore.RESET}) Skip this entry? [y/N] '
+							f'{colorama.Fore.RESET}) Skip this entry? [Y/n] '
 					).casefold() != 'n':
 						print(f'{colorama.Fore.RED}Skipped')
 						break

@@ -376,7 +376,7 @@ def process_urls(infos, pattern_title = None) -> None:
 	for info, request, found_title, found_url_request in infos_working:
 		print()
 		print(f'{colorama.Fore.YELLOW}{i_infos} / {len(infos_working)}')
-		print(pretty_youtubedl_info(info))
+		print(pretty_ytdl_info(info))
 
 		if found_url_request:
 			request = found_url_request
@@ -566,7 +566,7 @@ def pretty_pv_match_entry(match):
 		colorama.Fore.BLUE + url_db_s + colorama.Fore.MAGENTA + ' // ' + colorama.Fore.RESET + match_property,
 	]))
 
-def pretty_youtubedl_info(info):
+def pretty_ytdl_info(info):
 	'''Format the info extracted by youtube-dl.'''
 
 	title = info['title']

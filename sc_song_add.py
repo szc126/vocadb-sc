@@ -304,11 +304,10 @@ def process_urls(infos, pattern_title = None) -> None:
 		filename_pickle = sys.argv[0] + '.api-song-lookup.pickle'
 
 		request = disk_cache_decorator(filename_pickle)(lookup_url)(info, title = found_title)
-		if request.json()['matches']:
-			for entry in request.json()['matches']:
-				if entry['matchProperty'] == 'PV':
-					pv_added = True
-					break
+		for entry in request.json()['matches']:
+			if entry['matchProperty'] == 'PV':
+				pv_added = True
+				break
 
 		if pv_added:
 			song_id = request.json()['matches'][0]['entry']['id']
@@ -327,13 +326,18 @@ def process_urls(infos, pattern_title = None) -> None:
 				'webpage_url': (not match.group(0).startswith('http') and 'https://www.nicovideo.jp/watch/' or '') + match.group(0),
 			})
 
-		for found_url_info in found_url_infos:
-			found_url_request = disk_cache_decorator(filename_pickle)(lookup_url)(found_url_info, title = found_title)
-			if found_url_request.json()['matches']:
+		try:
+			for found_url_info in found_url_infos:
+				found_url_request = disk_cache_decorator(filename_pickle)(lookup_url)(found_url_info, title = found_title)
 				for entry in found_url_request.json()['matches']:
 					if entry['matchProperty'] == 'PV':
 						pv_added = True
-						break
+						# https://stackoverflow.com/a/11944179
+						# `break` does not stop outer loops,
+						# so `found_url_request` will be overwritten with later url lookups
+						raise StopIteration()
+		except StopIteration:
+			pass
 
 		if pv_added:
 			infos_working.append((info, request, found_title, found_url_request))

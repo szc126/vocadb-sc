@@ -316,15 +316,24 @@ def process_urls(infos, pattern_title = None) -> None:
 			print()
 			continue
 
-		# look for additional urls (「○○より転載」)
-		# XXX: maybe the original video is in vocadb but the found video is not in vocadb. always look all of these up?
+		# look for additional urls ("original URL:")
+		# XXX: maybe the original video is in vocadb but another found video is not in vocadb. always look all of these up?
+		# XXX: or the original video link comes after all other links. めんどくせい
+		# XXX: or the original video description was copy-and-pasted, without a link to the actual original video. めんどくせい
 		found_url_infos = []
 		# `\b` is not appropriate for CJK like 'ニコ動sm9'
-		for match in re.finditer(r'https?://(?:www\.|)nicovideo\.jp/watch/[sn]m[0-9]+|\b[sn]m[0-9]+|(?<=[^A-Za-z])[sn]m[0-9]+', info['description']):
-			found_url_infos.append({
+		for match in re.finditer(r'(?P<context>.{,10})(?P<id>https?://(?:www\.|)nicovideo\.jp/watch/[sn]m[0-9]+|\b[sn]m[0-9]+|(?<=[^A-Za-z])[sn]m[0-9]+)', info['description']):
+			found_url_info = {
 				'title': info['title'],
-				'webpage_url': (not match.group(0).startswith('http') and 'https://www.nicovideo.jp/watch/' or '') + match.group(0),
-			})
+				'webpage_url': (not match['id'].startswith('http') and 'https://www.nicovideo.jp/watch/' or '') + match['id'],
+			}
+			if re.search(r'ニコ|転載|より|轉載|出處', match.group('context')):
+				# prioritize "original URL:" links
+				# for debug:
+				#print('Context: ' + match['context'])
+				found_url_infos.insert(0, found_url_info)
+			else:
+				found_url_infos.append(found_url_info)
 
 		try:
 			for found_url_info in found_url_infos:

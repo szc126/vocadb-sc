@@ -125,7 +125,7 @@ def print_p(*args, **kwargs):
 # ----
 
 def login() -> bool:
-	'''Log in to *DB.'''
+	'''Log in to VocaDB.'''
 
 	netrc_auth = netrc.netrc().authenticators(SC.server)
 	if not netrc_auth:
@@ -155,9 +155,7 @@ def login() -> bool:
 	return True
 
 def verify_login_status(exception = True) -> bool:
-	'''Check if we are logged in to **DB.
-
-	Record user group ID.'''
+	'''Verify login to VocaDB; record user group ID.'''
 
 	print(f'Verifying login status for {colorama.Fore.CYAN}{SC.server}')
 	request = session.get(
@@ -216,23 +214,43 @@ def collect_urls() -> None:
 		urls.append(i)
 	return urls
 
-def get_ytdl_info(urls, pattern_select = None, pattern_unselect = None):
-	''''''
+def load_metadata_ytdl(urls, pattern_select = None, pattern_unselect = None):
+	'''Load URL metadata using youtube-dl.'''
 	# TODO: pattern_unselect
 
-	infos = []
 	print('Downloading URL metadata')
+	infos = []
 	with yt_dlp.YoutubeDL(ytdl_config) as ytdl:
 		for url in urls:
 			filename_pickle = sys.argv[0] + '.ytdl_extract_info.' + (str('playliststart' in ytdl_config and ytdl_config['playliststart'] or '')) + '-' + (str('playlistend' in ytdl_config and ytdl_config['playlistend'] or '')) + '.pickle' # ytdl_config differences are invisible to disk_cache_decorator()
 			info = disk_cache_decorator(filename_pickle)(ytdl.extract_info)(url)
-			infos += recursive_get_ytdl_individual_info(info)
+			infos += load_metadata_ytdl_recursive(info)
 		print()
 	return infos
 
-def process_ytbulk(filename, pattern_select = None, pattern_unselect = None):
-	''''''
+def load_metadata_ytdl_recursive(info) -> list:
+	'''Retrieve videos from within nested youtube-dl playlists.'''
+	# example: giving youtube-dl a YouTube channel
 
+	if '_type' in info and info['_type'] == 'playlist':
+		ret = []
+		for entry in info['entries']:
+			if entry is None:
+				# as with deleted videos in a YouTube playlist
+				continue
+			else:
+				ret += load_metadata_ytdl_recursive(entry)
+		return ret
+	else:
+		return [info]
+
+def load_metadata_ytbulk(filename, pattern_select = None, pattern_unselect = None):
+	'''
+	Load URL metadata from a local JSON file.
+	See https://github.com/mattwright324/youtube-metadata.
+	'''
+
+	print('Reading from videos.json')
 	infos = []
 	with open(filename, 'r') as file:
 		data = json.load(file)
@@ -259,7 +277,7 @@ def process_ytbulk(filename, pattern_select = None, pattern_unselect = None):
 	return infos
 
 def lookup_url(info, title = None):
-	''''''
+	'''Look up a URL in VocaDB.'''
 
 	# undocumented api
 	# https://vocadb.net/Song/Create?pvUrl=$foo
@@ -529,22 +547,6 @@ def process_urls(infos, pattern_title = None) -> None:
 	print()
 	print(f'All URLs have been {colorama.Fore.GREEN}processed.')
 
-def recursive_get_ytdl_individual_info(info) -> list:
-	'''Helper for flattening nested youtube-dl playlists.'''
-	# example: giving youtube-dl a YouTube channel
-
-	if '_type' in info and info['_type'] == 'playlist':
-		ret = []
-		for entry in info['entries']:
-			if entry is None:
-				# as with deleted videos in a YouTube playlist
-				continue
-			else:
-				ret += recursive_get_ytdl_individual_info(entry)
-		return ret
-	else:
-		return [info]
-
 def pretty_pv_match_entry(match):
 	'''Format the data returned by /api/songs/findDuplicate.'''
 	# saner than a print() (unless you like keys ordered alphabetically)
@@ -567,7 +569,7 @@ def pretty_pv_match_entry(match):
 	]))
 
 def pretty_ytdl_info(info):
-	'''Format the info extracted by youtube-dl.'''
+	'''Format the data returned by youtube-dl.'''
 
 	title = info['title']
 	uploader = info['uploader']
@@ -617,11 +619,11 @@ def main(args):
 	info = None
 
 	if args.ytbulk:
-		info = process_ytbulk(args.ytbulk, pattern_select = args.pattern_select, pattern_unselect = args.pattern_unselect)
+		info = load_metadata_ytbulk(args.ytbulk, pattern_select = args.pattern_select, pattern_unselect = args.pattern_unselect)
 	else:
 		if not urls:
 			urls = collect_urls()
-		info = get_ytdl_info(urls, pattern_select = args.pattern_select, pattern_unselect = args.pattern_unselect)
+		info = load_metadata_ytdl(urls, pattern_select = args.pattern_select, pattern_unselect = args.pattern_unselect)
 	process_urls(info, pattern_title = args.pattern_title)
 
 if __name__ == '__main__':
@@ -682,7 +684,7 @@ if __name__ == '__main__':
 	parser.add_argument(
 		'--ytbulk',
 		#type = argparse.FileType('r'),
-		help = 'videos.json to process, from https://mattw.io/youtube-metadata/bulk',
+		help = 'videos.json to process, from https://github.com/mattwright324/youtube-metadata',
 	)
 	args = parser.parse_args()
 

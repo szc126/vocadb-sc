@@ -416,8 +416,10 @@ def process_urls(infos, pattern_title = None) -> None:
 					break
 				if match_n < 0:
 					song_id = match_n * -1
+					match_property = 'SC:manual'
 				else:
 					song_id = request.json()['matches'][match_n - 1]['entry']['id']
+					match_property = request.json()['matches'][match_n - 1]['matchProperty']
 
 				pv_type = SC.pv_types.list[SC.pv_type - 1]
 
@@ -476,7 +478,12 @@ def process_urls(infos, pattern_title = None) -> None:
 
 				entry_data_modified = request_entry_data.json()
 				entry_data_modified['pvs'].append(request_pv_data.json())
-				entry_data_modified['updateNotes'] = f'[assisted] Add {pv_type}: {info["title"]}'
+				if match_property == 'PV':
+					entry_data_modified['updateNotes'] = f'[sc] (NND match) Add {pv_type}: {info["title"]}'
+				elif match_property == 'SC:manual':
+					entry_data_modified['updateNotes'] = f'[sc] (manual) Add {pv_type}: {info["title"]}'
+				else:
+					entry_data_modified['updateNotes'] = f'[sc] Add {pv_type}: {info["title"]}'
 
 				_ = session.get(
 					f'{SC.h_server}/api/antiforgery/token'

@@ -303,8 +303,8 @@ def lookup_videos(infos, pattern_title = None):
 
 	print(f'Looking up in {colorama.Fore.CYAN}{SC.server}')
 	infos_working = []
-	for i, info in enumerate(infos):
-		print(f'{colorama.Fore.YELLOW}{i + 1} / {len(infos)}')
+	for i, info in enumerate(infos, start = 1):
+		print(f'{colorama.Fore.YELLOW}{i} / {len(infos)}')
 		print(colorama.Fore.CYAN + info['title'])
 		print(colorama.Fore.BLUE + info['webpage_url'])
 
@@ -395,8 +395,7 @@ def lookup_videos(infos, pattern_title = None):
 def register_videos(infos_working) -> None:
 	'''Register videos in VocaDB.'''
 
-	i_infos = 1
-	for info, request, found_title, found_url_request in infos_working:
+	for i_infos, (info, request, found_title, found_url_request) in enumerate(infos_working, start = 1):
 		print()
 		print(f'{colorama.Fore.YELLOW}{i_infos} / {len(infos_working)}')
 		print(pretty_ytdl_info(info))
@@ -548,7 +547,6 @@ def register_videos(infos_working) -> None:
 				request = lookup_url(info, title = i)
 				# found_title is no longer relevant. don't print it a second time
 				found_title = i
-		i_infos += 1
 	print()
 
 def pretty_pv_match_entry(match):

@@ -222,7 +222,8 @@ def load_metadata_ytdl(urls, pattern_select = None, pattern_unselect = None):
 	infos = []
 	with yt_dlp.YoutubeDL(ytdl_config) as ytdl:
 		for url in urls:
-			filename_pickle = sys.argv[0] + '.ytdl_extract_info.' + (str('playliststart' in ytdl_config and ytdl_config['playliststart'] or '')) + '-' + (str('playlistend' in ytdl_config and ytdl_config['playlistend'] or '')) + '.pickle' # ytdl_config differences are invisible to disk_cache_decorator()
+			# ytdl_config differences are invisible to disk_cache_decorator()
+			filename_pickle = sys.argv[0] + '.ytdl_extract_info.' + str(ytdl_config.get('playliststart', 0)) + '-' + str(ytdl_config.get('playlistend', 0)) + '.pickle'
 			info = disk_cache_decorator(filename_pickle)(ytdl.extract_info)(url)
 			infos += load_metadata_ytdl_recursive(info)
 		print()
@@ -254,7 +255,8 @@ def load_metadata_ytbulk(filename, pattern_select = None, pattern_unselect = Non
 	infos = []
 	with open(filename, 'r') as file:
 		data = json.load(file)
-		data = data['playliststart' in ytdl_config and ytdl_config['playliststart'] or None : 'playlistend' in ytdl_config and ytdl_config['playlistend'] or None]
+		# i hate math i hate computers i hate coding
+		data = data[ytdl_config.get('playliststart', 1) - 1 : ytdl_config.get('playlistend')]
 		for video in data:
 			if pattern_select and not re.search(pattern_select, video['snippet']['title']):
 				print('Unselected: ' + video['snippet']['title'])
@@ -647,14 +649,14 @@ if __name__ == '__main__':
 		# https://stackoverflow.com/q/9746838
 		dest = 'list_from',
 		type = int,
-		help = 'start from video N of a playlist (or channel)',
+		help = 'start from (inclusive) video N of a playlist (or channel)',
 	)
 	parser.add_argument(
 		'--to',
 		'-t',
 		dest = 'list_to',
 		type = int,
-		help = 'stop before video N of a playlist (or channel)',
+		help = 'stop on (inclusive) video N of a playlist (or channel)',
 	)
 	parser.add_argument(
 		'--parse',

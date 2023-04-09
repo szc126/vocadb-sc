@@ -298,8 +298,8 @@ def lookup_url(info, title = None):
 
 	return request
 
-def process_urls(infos, pattern_title = None) -> None:
-	''''''
+def lookup_videos(infos, pattern_title = None):
+	'''Look up videos in VocaDB.'''
 
 	print(f'Looking up in {colorama.Fore.CYAN}{SC.server}')
 	infos_working = []
@@ -390,7 +390,10 @@ def process_urls(infos, pattern_title = None) -> None:
 			if found_url_infos:
 				disk_cache_decorator(filename_pickle, delete_cache = True)(lookup_url)(found_url_info, title = found_title)
 
-	print('----')
+	return infos_working
+
+def register_videos(infos_working) -> None:
+	'''Register videos in VocaDB.'''
 
 	i_infos = 1
 	for info, request, found_title, found_url_request in infos_working:
@@ -547,7 +550,6 @@ def process_urls(infos, pattern_title = None) -> None:
 				found_title = i
 		i_infos += 1
 	print()
-	print(f'All URLs have been {colorama.Fore.GREEN}processed.')
 
 def pretty_pv_match_entry(match):
 	'''Format the data returned by /api/songs/findDuplicate.'''
@@ -618,15 +620,18 @@ def main(args):
 	# ----
 
 	urls = args.urls
-	info = None
+	infos = None
 
 	if args.ytbulk:
-		info = load_metadata_ytbulk(args.ytbulk, pattern_select = args.pattern_select, pattern_unselect = args.pattern_unselect)
+		infos = load_metadata_ytbulk(args.ytbulk, pattern_select = args.pattern_select, pattern_unselect = args.pattern_unselect)
 	else:
 		if not urls:
 			urls = collect_urls()
-		info = load_metadata_ytdl(urls, pattern_select = args.pattern_select, pattern_unselect = args.pattern_unselect)
-	process_urls(info, pattern_title = args.pattern_title)
+		infos = load_metadata_ytdl(urls, pattern_select = args.pattern_select, pattern_unselect = args.pattern_unselect)
+	infos = lookup_videos(infos, pattern_title = args.pattern_title)
+	print('----')
+	register_videos(infos)
+	print(f'All URLs have been {colorama.Fore.GREEN}processed.')
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(

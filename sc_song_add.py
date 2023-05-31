@@ -4,9 +4,8 @@
 TODO:
 	- unintelligent matching of an album to a playlist. the album has 10 tracks, the playlist has 10 tracks, we are golden
 	- what happens in an edit conflict?
-	- 'it is an original pv because the producer was detected as the uploader'
-		- FALSE, it may be a false positive, such as with a bad parsing of '鏡音リン・レン'
-		- 2023/04/07: ?? what does this mean.
+	- 'it is an original pv because vocadb detected the producer after i gave it the link'
+		- FALSE, vocadb may also detect Some Producer such as with a bad parsing of '鏡音リン・レン'
 	- new flag 'do not ask me if this is a reprint, i told you these are reprints and that will be correct 100% of the time'
 	- allow to search by name more than once even if successful (fixing typo, trying with a different form, ...)
 	- don't ask if the pv type is right before asking; ask for a choice 1 2 3, with a default
@@ -119,7 +118,7 @@ def print_p(*args, **kwargs):
 	'''Pretty print using the pprint module.'''
 
 	import pprint
-	pp = pprint.PrettyPrinter(indent=2)
+	pp = pprint.PrettyPrinter(indent = 2)
 	pp.pprint(*args, **kwargs)
 
 # ----
@@ -345,9 +344,21 @@ def lookup_videos(infos, pattern_title = None):
 		for match in re.finditer(r'(?P<context>.{,10})(?P<id>https?://(?:www\.|)nicovideo\.jp/watch/[sn]m[0-9]+|\b[sn]m[0-9]+|(?<=[^A-Za-z])[sn]m[0-9]+)', info['description']):
 			found_url_info = {
 				'title': info['title'],
-				'webpage_url': (not match['id'].startswith('http') and 'https://www.nicovideo.jp/watch/' or '') + match['id'],
+				'webpage_url': (not match['id'].startswith('http') and 'https://www.nicovideo.jp/watch/' or '') + match['id'].replace('bilibili.tv', 'bilibili.com'),
 			}
-			if re.search(r'ニコ|転載|より|轉載|出處', match.group('context')):
+			if re.search(r'ニコ|転載|より|轉載|出處|bilibili', match.group('context')):
+				# prioritize "original URL:" links
+				# for debug:
+				#print('Context: ' + match['context'])
+				found_url_infos.insert(0, found_url_info)
+			else:
+				found_url_infos.append(found_url_info)
+		for match in re.finditer(r'(?P<context>.{,10})(?P<id>https?://(?:www\.|)bilibili\.(?:com|tv)/video/(av[0-9]+|BV[A-Za-z0-9]+)|\bav[0-9]+|BV[A-Za-z0-9]+)', info['description']):
+			found_url_info = {
+				'title': info['title'],
+				'webpage_url': (not match['id'].startswith('http') and 'https://www.bilibili.com/video/' or '') + match['id'],
+			}
+			if re.search(r'bilibili|轉載|出處', match.group('context')):
 				# prioritize "original URL:" links
 				# for debug:
 				#print('Context: ' + match['context'])
@@ -400,22 +411,39 @@ def register_videos(infos_working) -> None:
 		print(f'{colorama.Fore.YELLOW}{i_infos} / {len(infos_working)}')
 		print(pretty_ytdl_info(info))
 
+		found_title_by_vocadb = request.json()['title']
+		matches = request.json()['matches']
+
 		if found_url_request:
-			request = found_url_request
+			found_url_matches = found_url_request.json()['matches']
+
+			# some nested loop abomination courtesy of chatgpt
+			# equivalent to a for-loop inside a for-loop
+			# keep `fu_match` instead of `match` for the `match_property`
+			matches_intersection = [fu_match for fu_match in found_url_matches for match in matches if fu_match['entry']['id'] == match['entry']['id']]
+			if len(matches_intersection) > 0:
+				matches = matches_intersection
+			else:
+				# if there is 0 overlap,
+				# reject most of `found_url_matches`,
+				# because it could be a PV match for
+				# some other video in the description, like "新作→"
+				matches = [fu_match for fu_match in found_url_matches if fu_match['matchProperty'] == 'PV'] + matches
 
 		while True:
-			for i, match in enumerate(request.json()['matches']):
+			for i, match in enumerate(matches):
 				print(colorama.Fore.YELLOW + str(i + 1).ljust(3) + pretty_pv_match_entry(match).replace('\n', '\n   '))
 			print()
 
 			# TODO:
 			# - get upset if a match is a PV match (which happens when I manually add a PV behind the script's back)
 
-			if request.json()['matches']:
-				if found_url_request:
-					print(f'{colorama.Fore.YELLOW}Found matches, {colorama.Fore.CYAN}using video description')
-				else:
-					print(f'{colorama.Fore.YELLOW}Found matches')
+			if matches:
+				#if found_url_request:
+				#	print(f'{colorama.Fore.YELLOW}Found matches, {colorama.Fore.CYAN}using video description')
+				#else:
+				#	print(f'{colorama.Fore.YELLOW}Found matches')
+				print(f'{colorama.Fore.YELLOW}Found matches')
 
 				match_n = 1
 				while True:
@@ -434,7 +462,7 @@ def register_videos(infos_working) -> None:
 					else:
 						try:
 							match_n = int(i)
-							print('  ' + pretty_pv_match_entry(request.json()['matches'][match_n - 1]).replace('\n', '\n  '))
+							print('  ' + pretty_pv_match_entry(matches[match_n - 1]).replace('\n', '\n  '))
 							if input('Is this correct? [Y/n] ').casefold() != 'n':
 								break
 						except ValueError:
@@ -449,11 +477,10 @@ def register_videos(infos_working) -> None:
 					song_id = match_n * -1
 					match_property = 'SC:manual'
 				else:
-					song_id = request.json()['matches'][match_n - 1]['entry']['id']
-					match_property = request.json()['matches'][match_n - 1]['matchProperty']
+					song_id = matches[match_n - 1]['entry']['id']
+					match_property = matches[match_n - 1]['matchProperty']
 
 				pv_type = SC.pv_types.list[SC.pv_type - 1]
-
 				while True:
 					i = input(f'PV type {colorama.Fore.CYAN}{pv_type}{colorama.Fore.RESET}. [continue/Original/Reprint/otHer] ').casefold()
 					if i == '':
@@ -509,8 +536,9 @@ def register_videos(infos_working) -> None:
 
 				entry_data_modified = request_entry_data.json()
 				entry_data_modified['pvs'].append(request_pv_data.json())
+
 				if match_property == 'PV':
-					entry_data_modified['updateNotes'] = f'[sc] (NND match) Add {pv_type}: {info["title"]}'
+					entry_data_modified['updateNotes'] = f'[sc] (ID match) Add {pv_type}: {info["title"]}'
 				elif match_property == 'SC:manual':
 					entry_data_modified['updateNotes'] = f'[sc] (manual) Add {pv_type}: {info["title"]}'
 				else:
@@ -519,7 +547,7 @@ def register_videos(infos_working) -> None:
 				_ = session.get(
 					f'{SC.h_server}/api/antiforgery/token'
 				)
-				# undocumented not-api
+				# undocumented api
 				request_save = session.post(
 					f'{SC.h_server}/api/songs/{song_id}',
 					headers = {
@@ -539,14 +567,15 @@ def register_videos(infos_working) -> None:
 				break
 			else:
 				print(f'{colorama.Fore.YELLOW}No matches' + (f'{colorama.Fore.RESET} for {colorama.Fore.CYAN}{found_title}.' if found_title else ''))
-				i = prompt_toolkit.prompt('Search by name, or add "." to skip this entry: ', default = found_title or request.json()['title'])
-				if i == (found_title or request.json()['title']) + '.' or i == '':
+				i = prompt_toolkit.prompt('Search by name, or add "." to skip this entry: ', default = found_title or found_title_by_vocadb)
+				if i == (found_title or found_title_by_vocadb) + '.' or i == '':
 					print(f'{colorama.Fore.RED}Skipped')
 					print(f'Create a new entry? {colorama.Fore.CYAN}{SC.h_server}/Song/Create?pvUrl={info["webpage_url"]}')
 					break
 				request = lookup_url(info, title = i)
 				# found_title is no longer relevant. don't print it a second time
 				found_title = i
+				matches = request.json()['matches']
 	print()
 
 def pretty_pv_match_entry(match):
@@ -563,6 +592,8 @@ def pretty_pv_match_entry(match):
 
 	if match_property == 'PV':
 		match_property = colorama.Fore.GREEN + match_property + ' \U0001f517' + colorama.Fore.RESET
+	else:
+		match_property = colorama.Fore.MAGENTA + match_property
 
 	return '\n'.join(filter(None, [
 		colorama.Fore.CYAN + display_name + (colorama.Fore.MAGENTA + ' // ' + colorama.Fore.RESET + additional_names if additional_names else '') + colorama.Fore.RESET,

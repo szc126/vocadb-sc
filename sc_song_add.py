@@ -714,7 +714,7 @@ if __name__ == '__main__':
 		'urls',
 		nargs = '*',
 		metavar = 'URL',
-		help = 'URL(s) to process'
+		help = 'URL(s) to process',
 		# use '--' before an URL that begins with a hyphen
 		# https://docs.python.org/dev/library/argparse.html#arguments-containing
 	)

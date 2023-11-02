@@ -142,6 +142,7 @@ def login() -> bool:
 		},
 		headers = {
 			'requestVerificationToken': session.cookies.get_dict()['XSRF-TOKEN'],
+			'Origin': 'https://vocadb.net',
 		}
 	)
 

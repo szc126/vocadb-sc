@@ -42,14 +42,12 @@ import requests # https://stackoverflow.com/questions/2018026/what-are-the-diffe
 import re
 import sys
 import colorama
-import pickle
 import yt_dlp
 import argparse
 import json
 import prompt_toolkit
 import math
-
-from disk_cache_decorator import disk_cache_decorator # local module
+from diskcache import Cache
 
 # XXX: rename from 'SC'ript to 'song-add' or something idk
 # XXX: is this how classes work?
@@ -176,26 +174,21 @@ def verify_login_status(exception = True) -> bool:
 def save_cookies() -> bool:
 	'''Save cookies to disk.'''
 
-	filename = sys.argv[0] + '.cookies' + '.' + SC.server + '.pickle'
-	with open(filename, 'wb') as file:
-		pickle.dump(session.cookies, file)
-	print(f'{colorama.Fore.GREEN}Saved cookies{colorama.Fore.RESET} to {colorama.Fore.CYAN}{filename}')
+	with Cache(sys.argv[0] + '.cache/cookies') as cache:
+		cache.set('cookies' + SC.server, session.cookies)
+	print(f'{colorama.Fore.GREEN}Saved cookies{colorama.Fore.RESET}')
 	return True
 
 def load_cookies() -> bool:
 	'''Load cookies from disk.'''
 
 	try:
-		filename = sys.argv[0] + '.cookies' + '.' + SC.server + '.pickle'
-		with open(filename, 'rb') as file:
-			session.cookies.update(pickle.load(file))
-		print(f'{colorama.Fore.GREEN}Loaded cookies{colorama.Fore.RESET} from {colorama.Fore.CYAN}{filename}')
+		with Cache(sys.argv[0] + '.cache/cookies') as cache:
+			session.cookies.update(cache.get('cookies' + SC.server))
+		print(f'{colorama.Fore.GREEN}Loaded cookies{colorama.Fore.RESET}')
 		return True
-	except FileNotFoundError:
+	except TypeError:
 		print(f'{colorama.Fore.RED}Could not find cookies')
-		return False
-	except pickle.UnpicklingError:
-		print(f'{colorama.Fore.RED}Could not read cookies')
 		return False
 
 # ----
@@ -222,9 +215,11 @@ def load_metadata_ytdl(urls, pattern_select = None, pattern_unselect = None):
 	infos = []
 	with yt_dlp.YoutubeDL(ytdl_config) as ytdl:
 		for url in urls:
-			# ytdl_config differences are invisible to disk_cache_decorator()
-			filename_pickle = sys.argv[0] + '.ytdl_extract_info.' + str(ytdl_config.get('playliststart', 0)) + '-' + str(ytdl_config.get('playlistend', 0)) + '.pickle'
-			info = disk_cache_decorator(filename_pickle)(ytdl.extract_info)(url)
+			# ytdl_config differences do not affect the function signature
+			# and the function signature is used as the key,
+			# so reflect it in the filename instead
+			cache = Cache(sys.argv[0] + '.cache/ytdl_extract_info.' + str(ytdl_config.get('playliststart', 0)) + '-' + str(ytdl_config.get('playlistend', 0)))
+			info = cache.memoize()(ytdl.extract_info)(url)
 			infos += load_metadata_ytdl_recursive(info)
 		print()
 	return infos
@@ -278,6 +273,8 @@ def load_metadata_ytbulk(filename, pattern_select = None, pattern_unselect = Non
 			})
 	return infos
 
+cache_lookup_url = Cache(sys.argv[0] + '.cache/api-lookup-url')
+@Cache.memoize(cache_lookup_url)
 def lookup_url(info, title = None):
 	'''Look up a URL in VocaDB.'''
 
@@ -321,9 +318,8 @@ def lookup_videos(infos, pattern_title = None):
 		found_title = (found_title.group(1) if found_title else found_title)
 
 		pv_added = False
-		filename_pickle = sys.argv[0] + '.api-song-lookup.pickle'
 
-		request = disk_cache_decorator(filename_pickle)(lookup_url)(info, title = found_title)
+		request = lookup_url(info, title = found_title)
 		for entry in request.json()['matches']:
 			if entry['matchProperty'] == 'PV':
 				pv_added = True
@@ -369,7 +365,7 @@ def lookup_videos(infos, pattern_title = None):
 
 		try:
 			for found_url_info in found_url_infos:
-				found_url_request = disk_cache_decorator(filename_pickle)(lookup_url)(found_url_info, title = found_title)
+				found_url_request = lookup_url(found_url_info, title = found_title)
 				for entry in found_url_request.json()['matches']:
 					if entry['matchProperty'] == 'PV':
 						pv_added = True
@@ -387,7 +383,7 @@ def lookup_videos(infos, pattern_title = None):
 			print()
 
 			# delete failed lookup from cache: re-lookup URL on next launch
-			disk_cache_decorator(filename_pickle, delete_cache = True)(lookup_url)(info, title = found_title)
+			cache_lookup_url.pop(lookup_url.__cache_key__(info, title = found_title))
 		else:
 			infos_working.append((info, request, found_title, False))
 			print(f'This PV {colorama.Fore.RED}is not registered.')
@@ -398,9 +394,9 @@ def lookup_videos(infos, pattern_title = None):
 			print()
 
 			# delete failed lookup from cache: re-lookup URL on next launch
-			disk_cache_decorator(filename_pickle, delete_cache = True)(lookup_url)(info, title = found_title)
+			cache_lookup_url.pop(lookup_url.__cache_key__(info, title = found_title))
 			if found_url_infos:
-				disk_cache_decorator(filename_pickle, delete_cache = True)(lookup_url)(found_url_info, title = found_title)
+				cache_lookup_url.pop(lookup_url.__cache_key__(found_url_info, title = found_title))
 
 	return infos_working
 

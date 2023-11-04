@@ -220,7 +220,10 @@ def load_metadata_ytdl(urls, pattern_select = None, pattern_unselect = None):
 			# so reflect it in the filename instead
 			cache = Cache(sys.argv[0] + '.cache/ytdl_extract_info.' + str(ytdl_config.get('playliststart', 0)) + '-' + str(ytdl_config.get('playlistend', 0)))
 			info = cache.memoize()(ytdl.extract_info)(url)
-			infos += load_metadata_ytdl_recursive(info)
+			if info:
+				infos += load_metadata_ytdl_recursive(info)
+			else:
+				print(f'{colorama.Fore.RED}URL is unavailable: {colorama.Fore.RESET}{url}')
 		print()
 	return infos
 

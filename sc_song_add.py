@@ -166,7 +166,13 @@ def verify_login_status(exception = True) -> bool:
 			print(f'{colorama.Fore.RED}Login failed. HTTP status code {request.status_code}')
 			return False
 
-	SC.user_group_id = SC.user_group_ids.from_str(request.json()['groupId'])
+	try:
+		SC.user_group_id = SC.user_group_ids.from_str(request.json()['groupId'])
+	except requests.exceptions.JSONDecodeError:
+		# https://vocadb.net/User/Login?ReturnUrl=%2Fapi%2Fusers%2Fcurrent
+		# (200 OK)
+		print(f'{colorama.Fore.RED}Login failed. Expired login')
+		return False
 
 	print(f'{colorama.Fore.GREEN}Logged in{colorama.Fore.RESET} as {colorama.Fore.CYAN}' + request.json()['name'])
 	return True

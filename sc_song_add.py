@@ -344,6 +344,7 @@ def lookup_videos(infos, pattern_title = None):
 		# look for additional urls ("original URL:")
 		# XXX: maybe the original video is in vocadb but another found video is not in vocadb. always look all of these up?
 		# XXX: or the original video link comes after all other links. めんどくせい
+		# example: https://vocadb.net/S/11639 (cover) https://vocadb.net/S/580916 (cover)
 		# XXX: or the original video description was copy-and-pasted, without a link to the actual original video. めんどくせい
 		found_url_infos = []
 		# `\b` is not appropriate for CJK like 'ニコ動sm9'

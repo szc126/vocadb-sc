@@ -514,6 +514,13 @@ def register_videos(infos_working) -> None:
 						print(f'{colorama.Fore.RED}Skipped')
 						break
 
+				# example: https://vocadb.net/S/8572
+				if request_entry_data.json()['status'] == 'Locked':
+					if SC.user_group_id < SC.user_group_ids.MOD:
+						input(f'{colorama.Fore.YELLOW}This entry is locked. You do not have the permissions to edit it. {colorama.Fore.RESET}Press enter to continue.')
+						print(f'{colorama.Fore.RED}Skipped')
+						break
+
 				# undocumented api
 				request_pv_data = session.get(
 					f'{SC.h_server}/api/pvs',

@@ -579,7 +579,7 @@ def register_videos(infos_working) -> None:
 
 				break
 			else:
-				print(f'{colorama.Fore.YELLOW}No matches' + (f'{colorama.Fore.RESET} for {colorama.Fore.CYAN}{found_title}.' if found_title else ''))
+				print(f'{colorama.Fore.YELLOW}No matches' + (f'{colorama.Fore.RESET} for {colorama.Fore.CYAN}{found_title}{colorama.Fore.RESET}.' if found_title else ''))
 				i = prompt_toolkit.prompt('Search by name, or add "." to skip this entry: ', default = found_title or found_title_by_vocadb)
 				if i == (found_title or found_title_by_vocadb) + '.' or i == '':
 					print(f'{colorama.Fore.RED}Skipped')

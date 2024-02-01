@@ -453,12 +453,12 @@ def register_videos(infos_working) -> None:
 
 				match_n = 1
 				while True:
-					i = input('Choose match [1/...], or enter "s<song ID>", or enter "." to skip this URL: ')
+					i = input(f'Choose match [1/...], or enter "https://{SC.server}/S/<song ID>", or enter "." to skip this URL: ')
 					if i == '':
 						break
-					elif i[0] == 's':
+					elif i.startswith(f'https://{SC.server}/S/'):
 						try:
-							match_n = int(i[1:]) * -1 # ID as a negative integer
+							match_n = int(i.removeprefix(f'https://{SC.server}/S/')) * -1 # ID as a negative integer
 							break
 						except ValueError:
 							print(f'{colorama.Fore.RED}Invalid choice')

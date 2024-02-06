@@ -9,21 +9,7 @@ TODO:
 	- new flag 'do not ask me if this is a reprint, i told you these are reprints and that will be correct 100% of the time'
 	- allow to search by name more than once even if successful (fixing typo, trying with a different form, ...)
 	- don't ask if the pv type is right before asking; ask for a choice 1 2 3, with a default
-	- add progress indicator (where?)
-	- why did i want to print to stderr? i forget
-	- (maybe?) regex with named groups for vocalist too
-	- check against video length instead of / in addition to entry recorded length?
-	- check if reprint/other is earlier than entry recorded publish date (automatic ng)
 	- "ignore this song permanently. forever."
-
-PATH FROM HERE:
-	- manual intervention
-		- constrain search results to a certain producer
-		- apply user-supplied regex to title
-		- search using video description links ('本家：sm00000000')
-			- look up ~that~ pv, and choose the song entry that comes up a second time
-		- manually give song ID
-			- bc the web interface is kinda bothersome tbh
 
 COLORS:
 	- green: Good
@@ -107,6 +93,7 @@ ytdl_config = {
 	#'playlistend': SC.playlistend,
 }
 
+# XXX: remove?
 def print_e(*args, **kwargs):
 	'''Print to standard error.'''
 
@@ -534,7 +521,8 @@ def register_videos(infos_working) -> None:
 				# TODO:
 				# we have the entry data. compare:
 				# - video titles
-				# - <s>video length</s>
+				# - all video lengths
+				# - video date
 
 				if request_entry_data.json()['lengthSeconds'] > 0 and not math.isclose(request_pv_data.json()['length'], request_entry_data.json()['lengthSeconds'], abs_tol = 2):
 					if input(

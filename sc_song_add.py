@@ -400,6 +400,7 @@ def lookup_videos(infos, pattern_title = None):
 def register_videos(infos_working) -> None:
 	'''Register videos in VocaDB.'''
 
+	infos_skipped = []
 	for i_infos, (info, request, found_title, found_url_info, found_url_request) in enumerate(infos_working, start = 1):
 		print()
 		print(f'{colorama.Fore.YELLOW}{i_infos} / {len(infos_working)}')
@@ -483,6 +484,7 @@ def register_videos(infos_working) -> None:
 				if match_n == 0:
 					print(f'{colorama.Fore.RED}Skipped')
 					print(f'Create a new entry? {colorama.Fore.CYAN}{SC.h_server}/Song/Create?pvUrl={info["webpage_url"]}')
+					infos_skipped.append(info)
 					break
 				if match_n < 0:
 					song_id = match_n * -1
@@ -517,6 +519,7 @@ def register_videos(infos_working) -> None:
 					if SC.user_group_id < SC.user_group_ids.TRUSTED:
 						input(f'{colorama.Fore.YELLOW}This entry is approved. You do not have the permissions to edit it. {colorama.Fore.RESET}Press enter to continue.')
 						print(f'{colorama.Fore.RED}Skipped')
+						infos_skipped.append(info)
 						break
 
 				# example: https://vocadb.net/S/8572
@@ -524,6 +527,7 @@ def register_videos(infos_working) -> None:
 					if SC.user_group_id < SC.user_group_ids.MOD:
 						input(f'{colorama.Fore.YELLOW}This entry is locked. You do not have the permissions to edit it. {colorama.Fore.RESET}Press enter to continue.')
 						print(f'{colorama.Fore.RED}Skipped')
+						infos_skipped.append(info)
 						break
 
 				# undocumented api
@@ -551,6 +555,7 @@ def register_videos(infos_working) -> None:
 							f'{colorama.Fore.RESET}) Skip this entry? [Y/n] '
 					).casefold() != 'n':
 						print(f'{colorama.Fore.RED}Skipped')
+						infos_skipped.append(info)
 						break
 
 				entry_data_modified = request_entry_data.json()
@@ -590,12 +595,20 @@ def register_videos(infos_working) -> None:
 				if i == (found_title or found_title_by_vocadb) + '.' or i == '':
 					print(f'{colorama.Fore.RED}Skipped')
 					print(f'Create a new entry? {colorama.Fore.CYAN}{SC.h_server}/Song/Create?pvUrl={info["webpage_url"]}')
+					infos_skipped.append(info)
 					break
 				request = lookup_url(info, title = i)
 				# found_title is no longer relevant. don't print it a second time
 				found_title = i
 				matches = request.json()['matches']
-	print()
+	if len(infos_skipped) > 0:
+		print('----')
+		print(f'{colorama.Fore.RED}Skipped URLs:')
+		for info in infos_skipped:
+			print(info['webpage_url'] + ' # ' + info['title'])
+			# TODO: option to restart immediately but with utaitedb?
+	print('----')
+	print(f'All URLs have been {colorama.Fore.GREEN}processed.')
 
 def pretty_pv_match_entry(match):
 	'''Format the data returned by /api/songs/findDuplicate.'''
@@ -679,7 +692,6 @@ def main(args):
 	infos = lookup_videos(infos, pattern_title = args.pattern_title)
 	print('----')
 	register_videos(infos)
-	print(f'All URLs have been {colorama.Fore.GREEN}processed.')
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(

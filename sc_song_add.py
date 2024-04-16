@@ -374,7 +374,7 @@ def lookup_videos(infos, pattern_title = None):
 			pass
 
 		if pv_added:
-			infos_working.append((info, request, found_title, found_url_request))
+			infos_working.append((info, request, found_title, found_url_info, found_url_request))
 			print(f'This PV {colorama.Fore.RED}is not registered.')
 			print(f'A PV in the video description {colorama.Fore.YELLOW}is registered.')
 			print()
@@ -382,7 +382,7 @@ def lookup_videos(infos, pattern_title = None):
 			# delete failed lookup from cache: re-lookup URL on next launch
 			cache_lookup_url.pop(lookup_url.__cache_key__(info, title = found_title))
 		else:
-			infos_working.append((info, request, found_title, False))
+			infos_working.append((info, request, found_title, False, False))
 			print(f'This PV {colorama.Fore.RED}is not registered.')
 			print(f'Create a new entry? {colorama.Fore.CYAN}{SC.h_server}/Song/Create?pvUrl={info["webpage_url"]}')
 			if found_url_infos:
@@ -400,10 +400,15 @@ def lookup_videos(infos, pattern_title = None):
 def register_videos(infos_working) -> None:
 	'''Register videos in VocaDB.'''
 
-	for i_infos, (info, request, found_title, found_url_request) in enumerate(infos_working, start = 1):
+	for i_infos, (info, request, found_title, found_url_info, found_url_request) in enumerate(infos_working, start = 1):
 		print()
 		print(f'{colorama.Fore.YELLOW}{i_infos} / {len(infos_working)}')
-		print(pretty_ytdl_info(info))
+		if found_url_info:
+			print(pretty_ytdl_info(info)
+				.replace(found_url_info['webpage_url'], colorama.Fore.GREEN + found_url_info['webpage_url'] + ' \U0001f517' + colorama.Fore.BLUE)
+			)
+		else:
+			print(pretty_ytdl_info(info))
 
 		found_title_by_vocadb = request.json()['title']
 		matches = request.json()['matches']

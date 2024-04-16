@@ -338,7 +338,7 @@ def lookup_videos(infos, pattern_title = None):
 		for match in re.finditer(r'(?P<context>.{,10})(?P<id>https?://(?:www\.|)nicovideo\.jp/watch/[sn]m[0-9]+|\b[sn]m[0-9]+|(?<=[^A-Za-z])[sn]m[0-9]+)', info['description']):
 			found_url_info = {
 				'title': info['title'],
-				'webpage_url': (not match['id'].startswith('http') and 'https://www.nicovideo.jp/watch/' or '') + match['id'].replace('bilibili.tv', 'bilibili.com'),
+				'webpage_url': (not match['id'].startswith('http') and 'https://www.nicovideo.jp/watch/' or '') + match['id'],
 			}
 			if re.search(r'ニコ|転載|より|轉載|出處|bilibili', match.group('context')):
 				# prioritize "original URL:" links
@@ -347,10 +347,10 @@ def lookup_videos(infos, pattern_title = None):
 				found_url_infos.insert(0, found_url_info)
 			else:
 				found_url_infos.append(found_url_info)
-		for match in re.finditer(r'(?P<context>.{,10})(?P<id>https?://(?:www\.|)bilibili\.(?:com|tv)/video/(av[0-9]+|BV[A-Za-z0-9]+)|\bav[0-9]+|BV[A-Za-z0-9]+)', info['description']):
+		for match in re.finditer(r'(?P<context>.{,10})(?P<id>https?://(?:www\.|)bilibili\.(?:com|tv)/video/(av[0-9]+|BV[A-Za-z0-9]+)|\bav[0-9]+|BV[A-Za-z0-9]{12})', info['description']):
 			found_url_info = {
 				'title': info['title'],
-				'webpage_url': (not match['id'].startswith('http') and 'https://www.bilibili.com/video/' or '') + match['id'],
+				'webpage_url': (not match['id'].startswith('http') and 'https://www.bilibili.com/video/' or '') + match['id'].replace('bilibili.tv', 'bilibili.com'),
 			}
 			if re.search(r'bilibili|轉載|出處', match.group('context')):
 				# prioritize "original URL:" links

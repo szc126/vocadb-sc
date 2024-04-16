@@ -127,7 +127,7 @@ def login() -> bool:
 		},
 		headers = {
 			'requestVerificationToken': session.cookies.get_dict()['XSRF-TOKEN'],
-			'Origin': 'https://vocadb.net',
+			'Origin': 'https://vocadb.net', # XXX: hey is it letting me write "origin vocadb" for all domains?
 		}
 	)
 
@@ -342,6 +342,7 @@ def lookup_videos(infos, pattern_title = None):
 			}
 			if re.search(r'ニコ|転載|より|轉載|出處|bilibili', match.group('context')):
 				# prioritize "original URL:" links
+				# XXX: https://utaitedb.net/S/2655 reprint where 本家 refers to VOCALOID original upload instead of utaite original upload
 				# for debug:
 				#print('Context: ' + match['context'])
 				found_url_infos.insert(0, found_url_info)

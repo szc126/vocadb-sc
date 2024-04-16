@@ -416,18 +416,30 @@ def register_videos(infos_working) -> None:
 		if found_url_request:
 			found_url_matches = found_url_request.json()['matches']
 
-			# some nested loop abomination courtesy of chatgpt
-			# equivalent to a for-loop inside a for-loop
-			# keep `fu_match` instead of `match` for the `match_property`
-			matches_intersection = [fu_match for fu_match in found_url_matches for match in matches if fu_match['entry']['id'] == match['entry']['id']]
-			if len(matches_intersection) > 0:
-				matches = matches_intersection
-			else:
-				# if there is 0 overlap,
-				# reject most of `found_url_matches`,
-				# because it could be a PV match for
-				# some other video in the description, like "新作→"
-				matches = [fu_match for fu_match in found_url_matches if fu_match['matchProperty'] == 'PV'] + matches
+			if False:
+				# some nested loop abomination courtesy of chatgpt
+				# equivalent to a for-loop inside a for-loop
+				# keep `fu_match` instead of `match` for the `match_property`
+				matches_intersection = [fu_match for fu_match in found_url_matches for match in matches if fu_match['entry']['id'] == match['entry']['id']]
+				if len(matches_intersection) > 0:
+					matches = matches_intersection
+				else:
+					# if there is 0 overlap,
+					# reject most of `found_url_matches`,
+					# because it could be a PV match for
+					# some other video in the description, like "新作→"
+					matches = [fu_match for fu_match in found_url_matches if fu_match['matchProperty'] == 'PV'] + matches
+
+			# 20240201: ignore the above.
+			# example: https://vocadb.net/S/497078 cover of a popular song
+			# original PV is registered; reprint is not registered
+			# when looking up the reprint, the original is not among the "possible matches"
+			# when looking up the original (URL found in description), the original is among the "possible matches", and so are the other wrong matches
+			# and the intersection of those 2 excludes what we want
+			# ----
+			# in most situations, we still will have intersection, so let us take PV match and move it to the front
+			found_url_matches = [fu_match for fu_match in found_url_matches if fu_match['matchProperty'] == 'PV']
+			matches = found_url_matches + [match for match in matches if match['entry']['id'] != found_url_matches[0]['entry']['id']]
 
 		while True:
 			for i, match in enumerate(matches):

@@ -238,35 +238,38 @@ def load_metadata_ytdl_recursive(info) -> list:
 
 def load_metadata_ytbulk(filename, pattern_select = None, pattern_unselect = None):
 	'''
-	Load URL metadata from a local JSON file.
+	Load URL metadata from within a local ZIP file.
 	See https://github.com/mattwright324/youtube-metadata.
 	'''
 
-	print('Reading from videos.json')
+	import zipfile
+
+	print('Reading from ' + filename)
 	infos = []
-	with open(filename, 'r') as file:
-		data = json.load(file)
-		# i hate math i hate computers i hate coding
-		data = data[ytdl_config.get('playliststart', 1) - 1 : ytdl_config.get('playlistend')]
-		for video in data:
-			if pattern_select and not re.search(pattern_select, video['snippet']['title']):
-				print('Unselected: ' + video['snippet']['title'])
-				continue
-			elif pattern_unselect and re.search(pattern_unselect, video['snippet']['title']):
-				print('Unselected: ' + video['snippet']['title'])
-				continue
-			infos.append({
-				'title': video['snippet']['title'],
-				'uploader': video['snippet']['channelTitle'],
-				'upload_date': video['snippet']['publishedAt'],
-				'duration': re.sub(
-					r'PT(\d+M)?(\d+S)?',
-					lambda match: str(  int(match.group(1)[:-1] if match.group(1) else 0) * 60 + int(match.group(2)[:-1] if match.group(2) else 0)  ),
-					video['contentDetails']['duration']
-				),
-				'webpage_url': 'https://www.youtube.com/watch?v=' + video['id'],
-				'description': video['snippet']['description'],
-			})
+	with zipfile.ZipFile(filename, 'r') as myzip:
+		with myzip.open('videos.json') as myjson:
+			data = json.load(myjson)
+	# i hate math i hate computers i hate coding
+	data = data[ytdl_config.get('playliststart', 1) - 1 : ytdl_config.get('playlistend')]
+	for video in data:
+		if pattern_select and not re.search(pattern_select, video['snippet']['title']):
+			print('Unselected: ' + video['snippet']['title'])
+			continue
+		elif pattern_unselect and re.search(pattern_unselect, video['snippet']['title']):
+			print('Unselected: ' + video['snippet']['title'])
+			continue
+		infos.append({
+			'title': video['snippet']['title'],
+			'uploader': video['snippet']['channelTitle'],
+			'upload_date': video['snippet']['publishedAt'],
+			'duration': re.sub(
+				r'PT(\d+M)?(\d+S)?',
+				lambda match: str(  int(match.group(1)[:-1] if match.group(1) else 0) * 60 + int(match.group(2)[:-1] if match.group(2) else 0)  ),
+				video['contentDetails']['duration']
+			),
+			'webpage_url': 'https://www.youtube.com/watch?v=' + video['id'],
+			'description': video['snippet']['description'],
+		})
 	return infos
 
 cache_lookup_url = Cache(sys.argv[0] + '.cache/api-lookup-url')
@@ -752,7 +755,7 @@ if __name__ == '__main__':
 	parser.add_argument(
 		'--ytbulk',
 		#type = argparse.FileType('r'),
-		help = 'videos.json to process, from https://github.com/mattwright324/youtube-metadata',
+		help = 'bulk_metadata.zip to process, from https://github.com/mattwright324/youtube-metadata',
 	)
 	args = parser.parse_args()
 

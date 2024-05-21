@@ -374,6 +374,9 @@ def lookup_videos(infos, pattern_title = None):
 						# `break` does not stop outer loops,
 						# so `found_url_request` will be overwritten with later url lookups
 						raise StopIteration()
+				# delete failed lookup from cache: re-lookup URL on next launch
+				# 本家 was not in VocaDB
+				cache_lookup_url.pop(lookup_url.__cache_key__(found_url_info, title = found_title))
 		except StopIteration:
 			pass
 

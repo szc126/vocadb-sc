@@ -2,7 +2,6 @@
 
 """
 TODO:
-	- unintelligent matching of an album to a playlist. the album has 10 tracks, the playlist has 10 tracks, we are golden
 	- what happens in an edit conflict?
 	- 'it is an original pv because vocadb detected the producer after i gave it the link'
 		- FALSE, vocadb may also detect Some Producer such as with a bad parsing of '鏡音リン・レン'

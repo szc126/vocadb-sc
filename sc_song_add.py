@@ -272,6 +272,59 @@ def load_metadata_ytbulk(filename, pattern_select = None, pattern_unselect = Non
 		})
 	return infos
 
+def load_metadata_album(album_id):
+	'''
+	From a VocaDB album ID, fetch its Youtube Music playlist.
+	'''
+
+	# nah im not splitting this out into a new function. who cares
+	request = session.get(
+		f'{SC.h_server}/api/albums/{args.album_id}',
+		params = {
+			'fields': 'WebLinks,Tracks',
+			'songFields': 'AdditionalNames', # same as `/api/songs/findDuplicate`
+		}
+	)
+	# XXX: also fetch PVs and eliminate the need for lookup_videos()?
+	# or maybe it's fine because there could be a possible mismatch between
+	# song entry associated with the PV and
+	# song entry listed in the album entry.
+	# um.
+	# XXX: detect that possible mismatch?
+
+	# locate the youtube music link
+	for weblink in request.json()['webLinks']:
+		if weblink['url'].startswith('https://music.youtube.com/playlist'):
+			# get playlist data
+			infos = load_metadata_ytdl([weblink['url']])
+
+	# length mismatch
+	# causes:
+	# - severely wrong information (wrong album)
+	#_- streaming version simply has a different number of tracks
+	# - video DVD
+	if len(request.json()['tracks']) != len(infos):
+		#raise Exception('length mismatch')
+		# XXX
+		pass
+
+	for i, _ in enumerate(infos):
+		# inject the VocaDB album data into the yt-dlp data
+		infos[i]['vocadb_album_track'] = request.json()['tracks'][i]
+
+		# why are there so many different keys for "url".
+		infos[i]['webpage_url'] = infos[i]['url']
+
+		# dummy description
+		# to appease the part of lookup_videos() that rifles through the description for more URLs
+		infos[i]['description'] = 'YouTube Music'
+
+		# dummy upload date
+		# to appease pretty_ytdl_info()
+		infos[i]['upload_date'] = 'YouTube Music'
+
+	return infos
+
 cache_lookup_url = Cache(sys.argv[0] + '.cache/api-lookup-url')
 @Cache.memoize(cache_lookup_url)
 def lookup_url(info, title = None):
@@ -449,6 +502,19 @@ def register_videos(infos_working) -> None:
 			found_url_matches = [fu_match for fu_match in found_url_matches if fu_match['matchProperty'] == 'PV']
 			matches = found_url_matches + [match for match in matches if match['entry']['id'] != found_url_matches[0]['entry']['id']]
 
+		if info['vocadb_album_track']:
+			reformed = {
+				'entry': info['vocadb_album_track']['song'],
+			}
+			# to appease pretty_pv_match_entry()
+			reformed['entry']['name'] = {
+				'additionalNames': info['vocadb_album_track']['song']['additionalNames'],
+				'displayName': info['vocadb_album_track']['song']['defaultName'],
+			}
+			reformed['entry']['entryTypeName'] = info['vocadb_album_track']['song']['songType']
+			reformed['matchProperty'] = 'YouTube Music'
+			matches = [reformed] + matches
+
 		while True:
 			for i, match in enumerate(matches):
 				print(colorama.Fore.YELLOW + str(i + 1).ljust(3) + pretty_pv_match_entry(match).replace('\n', '\n   '))
@@ -570,6 +636,8 @@ def register_videos(infos_working) -> None:
 
 				if match_property == 'PV':
 					entry_data_modified['updateNotes'] = f'[sc] (ID match) Add {pv_type}: {info["title"]}'
+				elif match_property == 'YouTube Music':
+					entry_data_modified['updateNotes'] = f'[sc] (YouTube Music) Add {pv_type}: {info["title"]}'
 				elif match_property == 'SC:manual':
 					entry_data_modified['updateNotes'] = f'[sc] (manual) Add {pv_type}: {info["title"]}'
 				else:
@@ -631,6 +699,8 @@ def pretty_pv_match_entry(match):
 
 	if match_property == 'PV':
 		match_property = colorama.Fore.GREEN + match_property + ' \U0001f517' + colorama.Fore.RESET
+	elif match_property == 'YouTube Music':
+		match_property = colorama.Fore.GREEN + match_property + ' \U0001f534' + colorama.Fore.RESET
 	else:
 		match_property = colorama.Fore.MAGENTA + match_property
 
@@ -679,6 +749,16 @@ def main(args):
 	if args.list_to:
 		ytdl_config['playlistend'] = args.list_to
 
+	if args.album_id:
+		# only get playlist information, not video information
+		ytdl_config['extract_flat'] = True
+		# designate as official upload
+		SC.pv_type = 1
+
+		# reduce an URL to just the ID
+		if 'https://' in args.album_id:
+			args.album_id = args.album_id.split('/')[-1]
+
 	if not (load_cookies() and verify_login_status(exception = False)):
 		login()
 		verify_login_status(exception = True)
@@ -692,6 +772,8 @@ def main(args):
 
 	if args.ytbulk:
 		infos = load_metadata_ytbulk(args.ytbulk, pattern_select = args.pattern_select, pattern_unselect = args.pattern_unselect)
+	elif args.album_id:
+		infos = load_metadata_album(args.album_id)
 	else:
 		if not urls:
 			urls = collect_urls()
@@ -759,6 +841,13 @@ if __name__ == '__main__':
 		'--ytbulk',
 		#type = argparse.FileType('r'),
 		help = 'bulk_metadata.zip to process, from https://github.com/mattwright324/youtube-metadata',
+	)
+	parser.add_argument(
+		'--albumid',
+		'--alid',
+		dest = 'album_id',
+		metavar = 'albumID',
+		help = 'VocaDB album ID (or URL); a YouTube Music URL will be located on its entry for usage',
 	)
 	args = parser.parse_args()
 

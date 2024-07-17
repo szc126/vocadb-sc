@@ -501,7 +501,7 @@ def register_videos(infos_working) -> None:
 			found_url_matches = [fu_match for fu_match in found_url_matches if fu_match['matchProperty'] == 'PV']
 			matches = found_url_matches + [match for match in matches if match['entry']['id'] != found_url_matches[0]['entry']['id']]
 
-		if info['vocadb_album_track']:
+		if 'vocadb_album_track' in info:
 			reformed = {
 				'entry': info['vocadb_album_track']['song'],
 			}

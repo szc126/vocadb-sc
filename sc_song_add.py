@@ -291,38 +291,49 @@ def load_metadata_album(album_id):
 	# um.
 	# XXX: detect that possible mismatch?
 
+	infos_all = [] # https://vocadb.net/Al/15168 uploaded 3 times to YouTube Music via 3 different distributors
 	# locate the youtube music link
 	for weblink in request.json()['webLinks']:
-		if weblink['url'].startswith('https://music.youtube.com/playlist'):
+		infos = []
+		if weblink['url'].startswith('https://music.youtube.com/playlist?'):
 			# get playlist data
 			infos = load_metadata_ytdl([weblink['url']])
+		elif weblink['url'].startswith('https://music.youtube.com/browse/'):
+			# get playlist data
+			infos = load_metadata_ytdl([weblink['url']])
+			infos = load_metadata_ytdl([infos[0]['url']])
+		else:
+			# nothing to do, examine the next URL
+			continue
 
-	# length mismatch
-	# causes:
-	# - severely wrong information (wrong album)
-	#_- streaming version simply has a different number of tracks
-	# - video DVD
-	if len(request.json()['tracks']) != len(infos):
-		#raise Exception('length mismatch')
-		# XXX
-		pass
+		# length mismatch
+		# causes:
+		# - severely wrong information (wrong album)
+		#_- streaming version simply has a different number of tracks
+		# - video DVD
+		if len(request.json()['tracks']) != len(infos):
+			#raise Exception('length mismatch')
+			# XXX
+			pass
 
-	for i, _ in enumerate(infos):
-		# inject the VocaDB album data into the yt-dlp data
-		infos[i]['vocadb_album_track'] = request.json()['tracks'][i]
+		for i, _ in enumerate(infos):
+			# inject the VocaDB album data into the yt-dlp data
+			infos[i]['vocadb_album_track'] = request.json()['tracks'][i]
 
-		# why are there so many different keys for "url".
-		infos[i]['webpage_url'] = infos[i]['url']
+			# why are there so many different keys for "url".
+			infos[i]['webpage_url'] = infos[i]['url']
 
-		# dummy description
-		# to appease the part of lookup_videos() that rifles through the description for more URLs
-		infos[i]['description'] = 'YouTube Music'
+			# dummy description
+			# to appease the part of lookup_videos() that rifles through the description for more URLs
+			infos[i]['description'] = 'YouTube Music'
 
-		# dummy upload date
-		# to appease pretty_ytdl_info()
-		infos[i]['upload_date'] = 'YouTube Music'
+			# dummy upload date
+			# to appease pretty_ytdl_info()
+			infos[i]['upload_date'] = 'YouTube Music'
 
-	return infos
+		infos_all += infos
+
+	return infos_all
 
 cache_lookup_url = Cache(sys.argv[0] + '.cache/api-lookup-url')
 @Cache.memoize(cache_lookup_url)

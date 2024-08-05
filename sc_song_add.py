@@ -311,14 +311,20 @@ def load_metadata_album(album_id):
 		# - severely wrong information (wrong album)
 		#_- streaming version simply has a different number of tracks
 		# - video DVD
+		ytm_offset = 0
 		if len(request.json()['tracks']) != len(infos):
-			#raise Exception('length mismatch')
-			# XXX
-			pass
+			print(f'Album length {colorama.Fore.RED}does not match: {colorama.Fore.RESET}{len(request.json()['tracks'])} (entry) vs. {len(infos)} (playlist).')
+			while True:
+				ytm_offset = input(f'The playlist is offset by: ')
+				try:
+					ytm_offset = int(ytm_offset)
+					break
+				except ValueError:
+					print(f'{colorama.Fore.RED}Invalid choice')
 
 		for i, _ in enumerate(infos):
 			# inject the VocaDB album data into the yt-dlp data
-			infos[i]['vocadb_album_track'] = request.json()['tracks'][i]
+			infos[i + ytm_offset]['vocadb_album_track'] = request.json()['tracks'][i]
 
 			# why are there so many different keys for "url".
 			infos[i]['webpage_url'] = infos[i]['url']

@@ -179,6 +179,7 @@ function create_button(url, song_entry) {
 		'pvUrl': url,
 	});
 	a.title = song_entry ? [song_entry.name, song_entry.songType, song_entry.artistString, song_entry.tags.map(tag => tag.tag.name).join(', ')].join('\n') : '';
+	a.target = '_blank'; // TODO: also make the video <a> open in a new tab?
 
 	let text = document.createTextNode(server);
 	a.appendChild(text);

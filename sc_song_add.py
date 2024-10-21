@@ -746,8 +746,9 @@ def pretty_ytdl_info(info):
 		colorama.Fore.RESET + uploader + (colorama.Fore.MAGENTA + ' // ' + colorama.Fore.RESET + upload_date if upload_date else ''),
 		colorama.Fore.BLUE + webpage_url,
 		(
-			colorama.Fore.RESET + '  ----' + '\n' +
-			colorama.Fore.BLUE + '  ' + description.replace('\n', '\n  ')
+			colorama.Fore.RESET + ' ┏━━' + '\n' +
+			colorama.Fore.RESET + colorama.Fore.BLUE + description.replace('\n', colorama.Fore.RESET + '\n' + colorama.Fore.BLUE) + '\n' +
+			colorama.Fore.RESET + ' ┗━━'
 		) if description else (
 			''
 		),

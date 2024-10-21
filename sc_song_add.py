@@ -448,6 +448,11 @@ def lookup_videos(infos, pattern_title = None):
 				cache_lookup_url.pop(lookup_url.__cache_key__(found_url_info, title = found_title))
 		except StopIteration:
 			pass
+		except json.decoder.JSONDecodeError as e:
+			# NND down, API returning 500 unhandled error
+			print(e)
+			cache_lookup_url.pop(lookup_url.__cache_key__(found_url_info, title = found_title))
+			pass
 
 		if pv_added:
 			infos_working.append((info, request, found_title, found_url_info, found_url_request))

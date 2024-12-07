@@ -300,11 +300,18 @@ def load_metadata_album(album_id):
 		infos = []
 		if weblink['url'].startswith('https://music.youtube.com/playlist?'):
 			infos = load_metadata_ytdl([weblink['url']])
+		elif weblink['url'].startswith('https://www.youtube.com/playlist?'):
+			infos = load_metadata_ytdl([weblink['url']])
 		elif weblink['url'].startswith('https://music.youtube.com/browse/'):
 			infos = load_metadata_ytdl([weblink['url']])
 			infos = load_metadata_ytdl([infos[0]['url']])
 		elif 'Bandcamp' in weblink['description']: # relying on `Description`, to include custom domains
 			infos = load_metadata_ytdl([weblink['url']])
+		#elif weblink['url'].startswith('https://soundcloud.com/'):
+		#	infos = load_metadata_ytdl([weblink['url']])
+		#	infos = load_metadata_ytdl([infos[0]['url']])
+			# pickle failure
+			# `AttributeError: 'HTTPHeaderDict' object has no attribute 'data'`
 		else:
 			# nothing to do, examine the next URL
 			continue

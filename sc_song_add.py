@@ -273,10 +273,9 @@ def load_metadata_ytbulk(filename, pattern_select = None, pattern_unselect = Non
 
 def load_metadata_album(album_id):
 	'''
-	From a VocaDB album ID, fetch its Youtube Music playlist.
+	From a VocaDB album ID, fetch album playlists.
 	'''
 
-	# nah im not splitting this out into a new function. who cares
 	request = session.get(
 		f'{SC.h_server}/api/albums/{args.album_id}',
 		params = {
@@ -292,16 +291,20 @@ def load_metadata_album(album_id):
 	# XXX: detect that possible mismatch?
 
 	infos_all = [] # https://vocadb.net/Al/15168 uploaded 3 times to YouTube Music via 3 different distributors
-	# locate the youtube music link
+	# locate playlists
 	for weblink in request.json()['webLinks']:
+		if weblink['disabled']:
+			# https://vocadb.net/Al/35677 URL is no longer active
+			continue
+
 		infos = []
 		if weblink['url'].startswith('https://music.youtube.com/playlist?'):
-			# get playlist data
 			infos = load_metadata_ytdl([weblink['url']])
 		elif weblink['url'].startswith('https://music.youtube.com/browse/'):
-			# get playlist data
 			infos = load_metadata_ytdl([weblink['url']])
 			infos = load_metadata_ytdl([infos[0]['url']])
+		elif 'Bandcamp' in weblink['description']: # relying on `Description`, to include custom domains
+			infos = load_metadata_ytdl([weblink['url']])
 		else:
 			# nothing to do, examine the next URL
 			continue
@@ -311,31 +314,39 @@ def load_metadata_album(album_id):
 		# - severely wrong information (wrong album)
 		#_- streaming version simply has a different number of tracks
 		# - video DVD
-		ytm_offset = 0
+		playlist_offset = 0
 		if len(request.json()['tracks']) != len(infos):
 			print(f'Album length {colorama.Fore.RED}does not match: {colorama.Fore.RESET}{len(request.json()['tracks'])} (entry) vs. {len(infos)} (playlist).')
 			while True:
-				ytm_offset = input(f'The playlist is offset by: ')
+				playlist_offset = input(f'The playlist is offset by: ')
 				try:
-					ytm_offset = int(ytm_offset)
+					playlist_offset = int(playlist_offset)
 					break
 				except ValueError:
 					print(f'{colorama.Fore.RED}Invalid choice')
 
 		for i, _ in enumerate(infos):
 			# inject the VocaDB album data into the yt-dlp data
-			infos[i + ytm_offset]['vocadb_album_track'] = request.json()['tracks'][i]
+			infos[i + playlist_offset]['vocadb_album_track'] = request.json()['tracks'][i]
+
+			# XXX: this is already a mess
 
 			# why are there so many different keys for "url".
-			infos[i]['webpage_url'] = infos[i]['url']
+			infos[i + playlist_offset]['webpage_url'] = infos[i]['url']
 
-			# dummy description
-			# to appease the part of lookup_videos() that rifles through the description for more URLs
-			infos[i]['description'] = 'YouTube Music'
+			# appease the part of lookup_videos() that rifles through the description for more URLs
+			infos[i + playlist_offset]['description'] = 'YouTube Music'
 
-			# dummy upload date
-			# to appease pretty_ytdl_info()
-			infos[i]['upload_date'] = 'YouTube Music'
+			# appease pretty_ytdl_info()
+			infos[i + playlist_offset]['upload_date'] = 'YouTube Music'
+
+			# appease pretty_ytdl_info()
+			if not 'uploader' in infos[i]:
+				infos[i + playlist_offset]['uploader'] = 'Bandcamp'
+
+			# appease pretty_ytdl_info()
+			if not 'duration' in infos[i]:
+				infos[i + playlist_offset]['duration'] = 0
 
 		infos_all += infos
 
@@ -533,7 +544,7 @@ def register_videos(infos_working) -> None:
 				'displayName': info['vocadb_album_track']['song']['defaultName'],
 			}
 			reformed['entry']['entryTypeName'] = info['vocadb_album_track']['song']['songType']
-			reformed['matchProperty'] = 'YouTube Music'
+			reformed['matchProperty'] = 'SC:album playlist'
 			matches = [reformed] + matches
 
 		while True:
@@ -657,8 +668,8 @@ def register_videos(infos_working) -> None:
 
 				if match_property == 'PV':
 					entry_data_modified['updateNotes'] = f'[sc] (ID match) Add {pv_type}: {info["title"]}'
-				elif match_property == 'YouTube Music':
-					entry_data_modified['updateNotes'] = f'[sc] (YouTube Music) Add {pv_type}: {info["title"]}'
+				elif match_property == 'SC:album playlist':
+					entry_data_modified['updateNotes'] = f'[sc] (album playlist) Add {pv_type}: {info["title"]}'
 				elif match_property == 'SC:manual':
 					entry_data_modified['updateNotes'] = f'[sc] (manual) Add {pv_type}: {info["title"]}'
 				else:
@@ -720,8 +731,8 @@ def pretty_pv_match_entry(match):
 
 	if match_property == 'PV':
 		match_property = colorama.Fore.GREEN + match_property + ' \U0001f517' + colorama.Fore.RESET
-	elif match_property == 'YouTube Music':
-		match_property = colorama.Fore.GREEN + match_property + ' \U0001f534' + colorama.Fore.RESET
+	elif match_property == 'SC:album playlist':
+		match_property = colorama.Fore.GREEN + 'Album playlist' + ' \U0001f534' + colorama.Fore.RESET
 	else:
 		match_property = colorama.Fore.MAGENTA + match_property
 
@@ -869,7 +880,7 @@ if __name__ == '__main__':
 		'--alid',
 		dest = 'album_id',
 		metavar = 'albumID',
-		help = 'VocaDB album ID (or URL); a YouTube Music URL will be located on its entry for usage',
+		help = 'VocaDB album ID (or URL); playlist URLs will be located on its entry for usage',
 	)
 	args = parser.parse_args()
 

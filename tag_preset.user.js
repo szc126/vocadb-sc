@@ -1,12 +1,16 @@
 // ==UserScript==
-// @name VocaDB tag presets
+// @namespace   szc
+// @name        VocaDB tag presets
+// @version     2025-01-30
+// @author      u126
+// @description buttons to add tags with one click
 // @homepageURL https://github.com/szc126/vocadb-sc
-// @downloadURL https://raw.githubusercontent.com/szc126/vocadb-sc/main/tag_preset.user.js
-// @namespace szc
-// @match https://vocadb.net/*
-// @match https://beta.vocadb.net/*
-// @grant none
+// @icon        https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/72x72/1f3f7.png
+// @match       https://vocadb.net/*
+// @match       https://beta.vocadb.net/*
 // ==/UserScript==
+
+'use strict';
 
 const observer = new MutationObserver(mutations => {
 	mutations.forEach(record => {
@@ -71,7 +75,10 @@ function main() {
 		["詰合pv", 6769],
 		["ai絵", 9119],
 		["公式絵", 6495],
-		["言葉遊", 6856],
+
+		["vb不詳", 6416],
+		["lyrics from poetry", 9424],
+		["title pun", 6856],
 	];
 
 	const song_id = window.location.pathname.split('/').pop();

@@ -1,37 +1,48 @@
 // ==UserScript==
-// @name        VocaDB aimbot 2024
-// @homepageURL https://github.com/szc126/vocadb-sc
-// @downloadURL https://raw.githubusercontent.com/szc126/vocadb-sc/main/aimbot.user.js
 // @namespace   szc
-// @match       *://www.nicovideo.jp/user/*
-// @match       *://www.nicovideo.jp/mylist/*
-// @match       *://www.nicovideo.jp/search/*
-// @match       *://www.nicovideo.jp/tag/*
-// @match       *://www.nicolog.jp/user/*
-// @match       *://www.youtube.com/*/videos
-// @match       *://www.youtube.com/*/search
-// @match       *://www.youtube.com/hashtag/*
-// @match       *://www.youtube.com/watch?*
-// @match       *://www.youtube.com/results?*
-// @match       *://space.bilibili.com/*
-// @match       *://search.bilibili.com/*
+// @name        VocaDB aimbot 2024
+// @version     2025-01-30
+// @author      u126
+// @description for extreme gamers only
+// @homepageURL https://github.com/szc126/vocadb-sc
+// @icon        https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/72x72/1faf5.png
+// @match       https://www.nicovideo.jp/user/*
+// @match       https://www.nicovideo.jp/mylist/*
+// @match       https://www.nicovideo.jp/search/*
+// @match       https://www.nicovideo.jp/tag/*
+// @match       https://www.nicolog.jp/user/*
+// @match       https://www.youtube.com/*/videos
+// @match       https://www.youtube.com/*/search
+// @match       https://www.youtube.com/hashtag/*
+// @match       https://www.youtube.com/watch?*
+// @match       https://www.youtube.com/results?*
+// @match       https://space.bilibili.com/*
+// @match       https://search.bilibili.com/*
 // @grant       GM.setValue
 // @grant       GM.getValue
-// @description for extreme gamers only
+// @grant       GM.registerMenuCommand
 // ==/UserScript==
 
-// shoutout to ChatGPT. i do not understand async/await
+'use strict';
+
+// shoutout to ChatGPT for figuring out where to put the darned async/await keywords
 // also. does the timeout cancel out the benefit (async) of using fetch(). lol.
 
-// domains: domains corresponding to each set of instructions (the stuff below)
-// a_query_selectors: CSS selectors for PV links
-// button_parent: the element that will contain the link to the VocaDB entry, defined relative to a PV link
-// nav_query_selectors: CSS selectors for the elements that will contain the link to start this script
+// domains:
+	// domains corresponding to each set of instructions (the stuff below)
+// a_query_selectors:
+	// CSS selectors for PV links
+// button_parent:
+	// the element that will contain the link to the VocaDB entry, defined relative to a PV link
+// nav_query_selectors:
+	// CSS selectors for the elements that will contain the link to start this script
 
-var server = false;
+let server = false;
 (async () => {
 	server = await GM.getValue('server', 'vocadb.net');
 })();
+
+let running = false;
 
 var services = {
 	'NicoNicoDouga': {
@@ -39,14 +50,14 @@ var services = {
 		'a_query_selectors': [
 			'a.NC-MediaObject-contents', // user
 			'.itemTitle a', // search & tag
+			//'a[data-decoration-video-id]', // watch. NG (all the `<a>`s are in one big container, so all the VocaDB links pile up at the end of the page)
 		],
 		'button_parent': function(a) {
 			return a.classList.contains('NC-Link') ? a.parentNode : a.parentNode.parentNode;
 		},
 		'nav_query_selectors': [
-			'.VideoContainer-headerTotalCount', // user
-			'.MylistHeader-name', // mylist
-			'.contentsBox[data-search-option] .toolbar', // search & tag
+			//'.NC-Tabs', // user
+			'.nico-CommonHeaderRoot > div:first-child > div:first-child > div:first-child',
 		],
 	},
 	'NicoNicoDouga-Nicolog': {
@@ -62,13 +73,7 @@ var services = {
 		],
 	},
 	'Youtube': {
-		// NOTE:
-		// For channels,
-		// giving the all videos "Videos" playlist to https://vocadb.net/SongList/Import
-		// is faster;
-		// however, that will always be "newest"-first
-
-		// also if you spam this on lists of non-vocaloid videos
+		// if you spam this on lists of non-vocaloid videos
 		// i explode you with hammers
 		// TODO: refuse to process further after N unregistered videos
 
@@ -91,25 +96,41 @@ var services = {
 	'Bilibili': {
 		'domains': ['bilibili.com'],
 		'a_query_selectors': [
-			'.cube-list a.title', // space.bilibili.com
+			'.bili-video-card__title a', // space.bilibili.com
 			'.bili-video-card__info--right > a', // search.bilibili.com
-			'a.cover-normal', // space.bilibili.com collectiondetail
 		],
 		'button_parent': function(a) {
 			return a.parentNode;
 		},
 		'nav_query_selectors': [
-			'.contribution-list', // space.bilibili.com 投稿
-			'.search-nav', // space.bilibili.com 搜索
-			'.page-head', // space.bilibili.com collectiondetail
+			'.nav-bar__main-left', // space.bilibili.com 投稿
 			'.vui_tabs--nav', // search.bilibili.com
 		],
 	},
 }
 
 async function process_urls(service) { // ASYNC
+	// message on YouTube channels
+	if (typeof ytInitialData !== 'undefined' && ytInitialData?.metadata?.channelMetadataRenderer?.externalId) {
+		prompt('For a faster option, consider instead:', 'https://' + server + '/SongList/Import');
+		prompt('Featured videos:', 'https://www.youtube.com/playlist?list=UULF' + ytInitialData.metadata.channelMetadataRenderer.externalId.slice(2));
+		prompt('Popular videos:', 'https://www.youtube.com/playlist?list=UULP' + ytInitialData.metadata.channelMetadataRenderer.externalId.slice(2));
+
+		if (confirm('Continue scanning?')) {
+			//
+		} else {
+			scan_stop();
+			return;
+		}
+	}
+
 	let as = document.querySelectorAll(services[service].a_query_selectors);
 	for (let a of as) {
+		if (!running) {
+			scan_stop();
+			return;
+		}
+
 		let url = a.href;
 
 		// allow running the script multiple times in one session.
@@ -124,7 +145,7 @@ async function process_urls(service) { // ASYNC
 			continue;
 		}
 
-		// skip ad links (the video ID is not embedded in the link)
+		// skip NND ad links (the video ID is not embedded in the link)
 		if (url.indexOf('api.nicoad.nicovideo.jp') > 0) {
 			continue;
 		};
@@ -134,12 +155,13 @@ async function process_urls(service) { // ASYNC
 		url = url.replace('nicolog.jp', 'nicovideo.jp');
 
 		let song_entry = await get_song_entry(url); // AWAIT
-		let button = create_button(url, song_entry);
+		let button = create_song_button(url, song_entry);
 		services[service].button_parent(a).appendChild(button);
 		if (song_entry) {
 			a.dataset.vocadbSongEntryId = song_entry.id;
 		}
 	}
+	scan_stop();
 }
 
 async function get_song_entry(url) { // ASYNC
@@ -168,7 +190,7 @@ async function get_song_entry(url) { // ASYNC
 	return false;
 }
 
-function create_button(url, song_entry) {
+function create_song_button(url, song_entry) {
 	// using <a> instead of <button>,
 	// so that i can open multiple links at once
 	// using extensions like Snap Links
@@ -187,27 +209,63 @@ function create_button(url, song_entry) {
 	return a;
 }
 
+function scan_start(service) {
+	if (running) {
+		// do not allow concurrent scanning of the same list of videos
+		return;
+	}
+
+	running = true;
+	document.getElementById('aimbot-style').innerText = '.aimbot-button-start { display: none; }';
+	process_urls(service);
+}
+
+function scan_stop() {
+	running = false;
+	document.getElementById('aimbot-style').innerText = '.aimbot-button-stop { display: none; }';
+}
+
 function add_main_button(service) {
+	let style = document.createElement('style');
+	style.id = 'aimbot-style';
+	style.innerText = '.aimbot-button-stop { display: none; }';
+	document.head.appendChild(style);
+
 	let navs = document.querySelectorAll(services[service].nav_query_selectors);
 	for (let nav of navs) {
-		// need to make a new button each time, yes
+		// have to construct a new `button` every time. sad
 
-		let button = document.createElement('button');
-		button.addEventListener('click', function(event) {
-			process_urls(service);
-		});
-		button.style.background = 'cyan';
+		// IIFE so that I can restate `let button` instead of making copy-and-paste mistakes related to variable names
+		(function() {
+			let button = document.createElement('button');
+			button.addEventListener('click', () => scan_start(service));
+			button.style.background = 'cyan';
+			button.classList.add('aimbot-button-start');
 
-		let text = document.createTextNode('Scan for ' + server);
-		button.appendChild(text);
+			button.appendChild(document.createTextNode('Scan for ' + server));
 
-		nav.appendChild(button);
+			nav.appendChild(button);
+		})();
+
+		(function() {
+			let button = document.createElement('button');
+			button.addEventListener('click', scan_stop);
+			button.style.background = 'magenta';
+			button.classList.add('aimbot-button-stop');
+
+			button.appendChild(document.createTextNode('Stop scanning for ' + server));
+
+			nav.appendChild(button);
+		})();
 	}
-	// TODO: stop the script if clicked while running
-	// TODO: what happens if you click it while it's running, anyway
 }
 
 function main() {
+	GM.registerMenuCommand('Change server from ' + server, function() {
+		GM.setValue('server', prompt('Change server from ' + server + ' to:', server));
+		server = server;
+	});
+
 	for (let service in services) {
 		let domains = services[service].domains;
 		if (domains.some(domain => window.location.href.includes(domain))) {

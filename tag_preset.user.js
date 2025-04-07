@@ -81,7 +81,8 @@ function main() {
 	div.classList.add("navbar-languageBar");
 	div.style.display = 'flex';
 	div.style.flexWrap = 'wrap';
-	div.style.fontSize = '1em'; // goes with the line way down below
+	div.style.fontSize = '1em'; // [a] this line is a pair with line [b]
+	div.style.letterSpacing = '-0.1em';
 	document.getElementsByClassName("sidebar-nav")[0].append(div);
 
 	const song_id = window.location.pathname.split('/').pop();
@@ -98,14 +99,13 @@ function main() {
 	).then(data_old => {
 		for (let i = 0; i < tag_presets.length; i++) {
 			let b = document.createElement("a");
-			b.innerHTML = tag_presets[i][0];
+			b.innerText = tag_presets[i][0];
 			b.addEventListener("click", function(event) {
-				let payload = [];
-				for (let j = 1; j < tag_presets[i].length; j++) {
-					payload.push({
-						'name': tag_presets[i][j],
-					});
-				}
+				let payload = tag_presets[i].slice(1).map(tag_name => {
+					return {
+						'name': tag_name,
+					}
+				});
 				fetch(
 					'/api/users/current/songTags/' + song_id,
 					{
@@ -135,7 +135,7 @@ function main() {
 			});
 			b.classList.add("btn");
 			b.classList.add("btn-default");
-			b.style.fontSize = '125%'; // goes with the line way up above
+			b.style.fontSize = '125%'; // [b] this line is a pair with line [a]
 
 			/* ChatGPT start */
 			let tags_added = tag_presets[i].slice(1).every(tag_name =>

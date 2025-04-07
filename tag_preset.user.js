@@ -138,7 +138,7 @@ async function main() {
 		}
 	).then(response => response.json());
 
-	tag_presets.concat(tag_suggestions.map(tag => ['💡' + tag.tag.name, tag.tag.name])).forEach(tag_preset => {
+	[...tag_presets, ...tag_suggestions.map(({ tag }) => ['💡' + tag.name, tag.name])].forEach(tag_preset => {
 		let payload = tag_preset.slice(1).map(tag_name => {
 			return {
 				'name': tag_name,

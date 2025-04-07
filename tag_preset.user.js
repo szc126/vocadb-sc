@@ -8,6 +8,9 @@
 // @icon        https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/72x72/1f3f7.png
 // @match       https://vocadb.net/*
 // @match       https://beta.vocadb.net/*
+// @grant       GM.setValue
+// @grant       GM.getValue
+// @grant       GM.registerMenuCommand
 // ==/UserScript==
 
 'use strict';
@@ -51,8 +54,12 @@ let tag_presets = [
 	['MMD'],
 	['良調声'],
 ];
-tag_presets.forEach((_, i) => {
-	if (tag_presets[i].length === 1) tag_presets[i] = tag_presets[i].concat(tag_presets[i])
+GM.getValue('additional_tag_presets', []).then((value) => {
+	tag_presets = tag_presets.concat(value);
+
+	tag_presets.forEach((_, i) => {
+		if (tag_presets[i].length === 1) tag_presets[i] = tag_presets[i].concat(tag_presets[i])
+	});
 });
 
 const tags_api_path = {
@@ -131,8 +138,6 @@ async function main() {
 	).then(response => response.json());
 
 	tag_presets.concat(tag_suggestions.map(tag => ['💡' + tag.tag.name, tag.tag.name])).forEach(tag_preset => {
-		console.log(tag_preset);
-
 		let payload = tag_preset.slice(1).map(tag_name => {
 			return {
 				'name': tag_name,
@@ -189,3 +194,11 @@ function apply_tag(event, entry_type, entry_id, payload) {
 		})
 	});
 };
+
+GM.registerMenuCommand('Add a tag preset', function() {
+	const tag_name = prompt('Tag name (will take effect on next tab reload):');
+	if (!tag_name) return;
+	GM.getValue('additional_tag_presets', []).then((value) => {
+		GM.setValue('additional_tag_presets', value.concat([[tag_name]]));
+	});
+});

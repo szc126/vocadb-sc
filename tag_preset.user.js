@@ -12,28 +12,6 @@
 
 'use strict';
 
-const observer = new MutationObserver(mutations => {
-	mutations.forEach(record => {
-		record.addedNodes.forEach(node => {
-			if (node.id === 'nprogress') {
-				try {
-					document.getElementById('mytagspreset').remove();
-				} catch(error) {
-					0;
-				}
-				if (window.location.pathname.indexOf('/S/') === 0 || window.location.pathname.indexOf('/Song/') === 0) {
-					main();
-					//observer.disconnect();
-				}
-			}
-		});
-	});
-});
-observer.observe(document.body, {
-	subtree: true,
-	childList: true,
-});
-
 let tag_presets = [
 	['翻', 'human original', 'original out of scope'],
 	['A', 'anime song cover'],
@@ -76,6 +54,37 @@ tag_presets.forEach((_, i) => {
 	if (tag_presets[i].length === 1) tag_presets[i] = tag_presets[i].concat(tag_presets[i])
 });
 
+const tags_api_path = {
+	'Ar': 'artistTags',
+	'Artist': 'artistTags',
+	'Al': 'albumTags',
+	'Album': 'albumTags',
+	'S': 'songTags',
+	'Song': 'songTags',
+}
+
+const observer = new MutationObserver(mutations => {
+	mutations.forEach(record => {
+		record.addedNodes.forEach(node => {
+			if (node.id === 'nprogress') {
+				try {
+					document.getElementById('mytagspreset').remove();
+				} catch(error) {
+					0;
+				}
+				if (tags_api_path[window.location.pathname.split('/')[1]]) {
+					main();
+					//observer.disconnect();
+				}
+			}
+		});
+	});
+});
+observer.observe(document.body, {
+	subtree: true,
+	childList: true,
+});
+
 function main() {
 	let div = document.createElement("div");
 	div.id = 'mytagspreset'
@@ -87,10 +96,12 @@ function main() {
 	div.style.letterSpacing = '-0.1em';
 	document.getElementsByClassName("sidebar-nav")[0].append(div);
 
-	const song_id = window.location.pathname.split('/').pop();
+	const url_split = window.location.pathname.split('/');
+	const entry_id = url_split[url_split.length - 1];
+	const entry_type = url_split[1];
 
 	fetch(
-		'/api/users/current/songTags/' + song_id,
+		'/api/users/current/' + tags_api_path[entry_type] + '/' + entry_id,
 		{
 			method: 'GET',
 			headers: {
@@ -109,7 +120,7 @@ function main() {
 					}
 				});
 				fetch(
-					'/api/users/current/songTags/' + song_id,
+					'/api/users/current/' + tags_api_path[entry_type] + '/' + entry_id,
 					{
 						method: 'GET',
 						headers: {
@@ -119,7 +130,7 @@ function main() {
 				).then(response => response.json()
 				).then(data => {
 					fetch(
-						'/api/users/current/songTags/' + song_id,
+						'/api/users/current/' + tags_api_path[entry_type] + '/' + entry_id,
 						{
 							method: 'PUT',
 							headers: {

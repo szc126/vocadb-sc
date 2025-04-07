@@ -10,6 +10,7 @@
 // @match       https://www.nicovideo.jp/mylist/*
 // @match       https://www.nicovideo.jp/search/*
 // @match       https://www.nicovideo.jp/tag/*
+// @match       https://www.nicovideo.jp/watch/*
 // @match       https://www.nicolog.jp/user/*
 // @match       https://www.youtube.com/*/videos
 // @match       https://www.youtube.com/*/search
@@ -47,15 +48,16 @@ var services = {
 	'NicoNicoDouga': {
 		'domains': ['www.nicovideo.jp'],
 		'a_query_selectors': [
-			'a.NC-MediaObject-contents', // user
-			'.itemTitle a', // search & tag
-			//'a[data-decoration-video-id]', // watch. NG (all the `<a>`s are in one big container, so all the VocaDB links pile up at the end of the page)
+			'a.NC-MediaObject-contents', // /user/
+			'.itemTitle a', // /search/ /tag/
+			'a[data-decoration-video-id]', // /watch/ recommended sidebar
 		],
 		'button_parent': function(a) {
-			return a.classList.contains('NC-Link') ? a.parentNode : a.parentNode.parentNode;
+			if (a.classList.contains('NC-MediaObject-contents')) return a.parentNode;
+			if (a.hasAttribute('data-decoration-video-id')) return a;
+			return a.parentNode.parentNode;
 		},
 		'nav_query_selectors': [
-			//'.NC-Tabs', // user
 			'.nico-CommonHeaderRoot > div:first-child > div:first-child > div:first-child',
 		],
 	},

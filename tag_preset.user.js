@@ -35,7 +35,7 @@ observer.observe(document.body, {
 });
 
 let tag_presets = [
-	['3D原', 'human original', 'original out of scope'],
+	['翻', 'human original', 'original out of scope'],
 	['A', 'anime song cover'],
 	['G', 'video game song cover'],
 	['TV', 'TV show song cover'],
@@ -55,18 +55,20 @@ let tag_presets = [
 	['淸', 'a cappella'],
 	['晒', 'editor PV'],
 	['ﾃﾞﾓ','voicebank demo'],
-	['vb升', 'upgraded voicebank'],
-	['utau配', 'UTAU voicebank release'],
-	['mp3配', 'free'],
-	['ｵｹ配', 'karaoke available'],
-	['ust配', 'UST available'],
-	['vsq配', 'VSQ available'],
-	['svﾗｲﾄ', 'Synthesizer V lite version voice'],
 	['詰合pv', 'multiple song PV'],
-	['ai絵', 'AI generated art'],
-	['公式絵', 'official art PV'],
+
+	['utau📥️', 'UTAU voicebank release'],
+	['mp3📥️', 'free'],
+	['ｵｹ📥️', 'karaoke available'],
+	['ust📥️', 'UST available'],
+	['vsq📥️', 'VSQ available'],
+	['svp📥️', 'SVP available'],
 
 	['vb不詳', 'unconfirmed vocalists'],
+	['vb升', 'upgraded voicebank'],
+	['svﾗｲﾄ', 'Synthesizer V lite version voice'],
+	['ai絵', 'AI generated art'],
+	['公式絵', 'official art PV'],
 	['lyrics from poetry'],
 	['title pun'],
 ];

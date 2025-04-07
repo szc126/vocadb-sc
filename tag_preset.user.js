@@ -19,12 +19,6 @@ let tag_presets = [
 	['TV', 'TV show song cover'],
 	['M', 'movie song cover'],
 
-	['跨', 'unsupported language'],
-	['sv', 'Synthesizer V AI cross-lingual singing synthesis'],
-	['換', 'changed language'],
-	['填', 'changed lyrics'],
-	['ﾊﾟﾛ','parody'],
-
 	['自翻', 'self-cover'],
 	['自混', 'self-remix'],
 	['ｼｮｰﾄ', 'short version'],
@@ -34,6 +28,12 @@ let tag_presets = [
 	['晒', 'editor PV'],
 	['ﾃﾞﾓ','voicebank demo'],
 	['詰合pv', 'multiple song PV'],
+
+	['跨', 'unsupported language'],
+	['sv', 'Synthesizer V AI cross-lingual singing synthesis'],
+	['換', 'changed language'],
+	['填', 'changed lyrics'],
+	['ﾊﾟﾛ','parody'],
 
 	['utau📥️', 'UTAU voicebank release'],
 	['mp3📥️', 'free'],
@@ -47,8 +47,9 @@ let tag_presets = [
 	['svﾗｲﾄ', 'Synthesizer V lite version voice'],
 	['ai絵', 'AI generated art'],
 	['公式絵', 'official art PV'],
-	['lyrics from poetry'],
-	['title pun'],
+
+	['MMD'],
+	['良調声'],
 ];
 tag_presets.forEach((_, i) => {
 	if (tag_presets[i].length === 1) tag_presets[i] = tag_presets[i].concat(tag_presets[i])

@@ -126,6 +126,7 @@ async function main() {
 			},
 		}
 	).then(response => response.json());
+	const current_tags_flat = current_tags.flatMap(({ tag }) => [tag.name, ...tag.additionalNames.split(', ')]);
 
 	const tag_suggestions = await fetch(
 		'/api/' + entry_type_api_path[entry_type] + '/' + entry_id + '/tagSuggestions',
@@ -151,15 +152,10 @@ async function main() {
 		b.style.fontSize = '125%'; // [b] this line is a pair with line [a]
 		b.title = tag_preset.slice(1).join('\n');
 
-		/* ChatGPT start */
-		let tags_added = tag_preset.slice(1).every(tag_name =>
-			current_tags.some(item => item.tag.name === tag_name)
-		);
-		if (tags_added) {
+		if (tag_preset.slice(1).every(tag_name => current_tags_flat.includes(tag_name))) {
 			b.classList.remove('btn-default');
 			b.classList.add('btn-success');
 		}
-		/* ChatGPT end */
 
 		div.append(b);
 	});

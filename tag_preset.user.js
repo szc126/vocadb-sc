@@ -1,7 +1,7 @@
 // ==UserScript==
 // @namespace   szc
 // @name        VocaDB tag presets
-// @version     2025-01-30
+// @version     2025-04-07
 // @author      u126
 // @description buttons to add tags with one click
 // @homepageURL https://github.com/szc126/vocadb-sc
@@ -34,6 +34,46 @@ observer.observe(document.body, {
 	childList: true,
 });
 
+let sets = [
+	['3D原', 'human original', 'original out of scope'],
+	['A', 'anime song cover'],
+	['G', 'video game song cover'],
+	['TV', 'TV show song cover'],
+	['M', 'movie song cover'],
+
+	['跨', 'unsupported language'],
+	['sv', 'Synthesizer V AI cross-lingual singing synthesis'],
+	['換', 'changed language'],
+	['填', 'changed lyrics'],
+	['ﾊﾟﾛ','parody'],
+
+	['自翻', 'self-cover'],
+	['自混', 'self-remix'],
+	['ｼｮｰﾄ', 'short version'],
+	['ﾌﾙ', 'extended version'],
+
+	['淸', 'a cappella'],
+	['晒', 'editor PV'],
+	['ﾃﾞﾓ','voicebank demo'],
+	['vb升', 'upgraded voicebank'],
+	['utau配', 'UTAU voicebank release'],
+	['mp3配', 'free'],
+	['ｵｹ配', 'karaoke available'],
+	['ust配', 'UST available'],
+	['vsq配', 'VSQ available'],
+	['svﾗｲﾄ', 'Synthesizer V lite version voice'],
+	['詰合pv', 'multiple song PV'],
+	['ai絵', 'AI generated art'],
+	['公式絵', 'official art PV'],
+
+	['vb不詳', 'unconfirmed vocalists'],
+	['lyrics from poetry'],
+	['title pun'],
+];
+sets.forEach((_, i) => {
+	if (sets[i].length === 1) sets[i] = sets[i].concat(sets[i])
+});
+
 function main() {
 	let div = document.createElement("div");
 	div.id = 'mytagspreset'
@@ -43,43 +83,6 @@ function main() {
 	div.style.flexWrap = 'wrap';
 	div.style.fontSize = '1em'; // goes with the line way down below
 	document.getElementsByClassName("sidebar-nav")[0].append(div);
-
-	const sets = [
-		["3D原", 3193, 3282],
-		["A", 22], // anime
-		["G", 455], // video game
-		["TV", 6715], // television
-		["M", 4677], // movie
-
-		["跨", 7059],
-		["sv", 8639], // synthv translingual
-		["換", 6224],
-		["填", 2866],
-		["ﾊﾟﾛ", 330], // parody
-
-		["自翻", 391],
-		["自混", 392],
-		["ｼｮｰﾄ", 4717],
-		["ﾌﾙ", 3068],
-
-		["淸", 7],
-		["晒", 6302],
-		["ﾃﾞﾓ", 89],
-		["vb升", 6333],
-		["utau配", 5027],
-		["mp3配", 160],
-		["ｵｹ配", 3113],
-		["ust配", 3153],
-		["vsq配", 3122],
-		["svﾗｲﾄ", 8044],
-		["詰合pv", 6769],
-		["ai絵", 9119],
-		["公式絵", 6495],
-
-		["vb不詳", 6416],
-		["lyrics from poetry", 9424],
-		["title pun", 6856],
-	];
 
 	const song_id = window.location.pathname.split('/').pop();
 
@@ -93,15 +96,14 @@ function main() {
 		}
 	).then(response => response.json()
 	).then(data_old => {
-
 		for (let i = 0; i < sets.length; i++) {
 			let b = document.createElement("a");
 			b.innerHTML = sets[i][0];
 			b.addEventListener("click", function(event) {
 				let payload = [];
-				for (let j = 0; j < sets[i].slice(1).length; j++) {
+				for (let j = 1; j < sets[i].length; j++) {
 					payload.push({
-						"id": sets[i].slice(1)[j],
+						'name': sets[i][j],
 					});
 				}
 				fetch(
@@ -136,8 +138,8 @@ function main() {
 			b.style.fontSize = '125%'; // goes with the line way up above
 
 			/* ChatGPT start */
-			let tags_added = sets[i].slice(1).every(tag_id =>
-				data_old.some(item => item.tag.id === tag_id)
+			let tags_added = sets[i].slice(1).every(tag_name =>
+				data_old.some(item => item.tag.name === tag_name)
 			);
 			if (tags_added) {
 				b.classList.remove('btn-default');

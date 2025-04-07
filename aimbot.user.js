@@ -1,7 +1,7 @@
 // ==UserScript==
 // @namespace   szc
 // @name        VocaDB aimbot 2024
-// @version     2025-01-30
+// @version     2025-04-07
 // @author      u126
 // @description for extreme gamers only
 // @homepageURL https://github.com/szc126/vocadb-sc
@@ -24,6 +24,8 @@
 // ==/UserScript==
 
 'use strict';
+
+// see also: https://gitlab.com/Hans5958-MWS/vocadb-docs/-/snippets/4801219
 
 // shoutout to ChatGPT for figuring out where to put the darned async/await keywords
 // also. does the timeout cancel out the benefit (async) of using fetch(). lol.
@@ -150,8 +152,14 @@ async function process_urls(service) { // ASYNC
 			continue;
 		};
 
+		// remove tracking garbage from URLs
+		// to aid caching
+		url = url.replace(/\?spm_id=.+$/, ''); // bilibili
+		url = url.replace(/&pp=.+$/, ''); // YouTube
+
 		// TODO: destroy the old "create an entry link" when running the script again?
 
+		// normalize nicolog
 		url = url.replace('nicolog.jp', 'nicovideo.jp');
 
 		let song_entry = await get_song_entry(url); // AWAIT

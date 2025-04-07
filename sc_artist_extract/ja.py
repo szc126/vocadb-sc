@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import re
+
 kw_song_type = {
 	'original': ['オリジナル', 'オリジナル曲', 'オリジナルソング', 'short ver'],
 	'remaster': ['修正版'],
@@ -29,6 +31,7 @@ kw_artist_role = {
 	'vsq': ['vsq', 'vsqx', 'ust'],
 
 	'other': ['special thanks'],
+	'publisher': [],
 	'parent': ['原曲', '本家'],
 }
 
@@ -58,10 +61,26 @@ kw_other_label = {
 }
 
 kw_sentence = [
-	r'(?:こんにちは|こんばんは)、?([^。]+)です。',
-	r'([^\n]+)からお?借り',
-	# ▼movie (etc)
-	r'(?P<bullet>.).+\n.+(\n+(?P=bullet).+\n.+)+',
+	(
+		r'(?:こんにちは|こんばんは)、?(?P<artist_name>[^。]+)です。',
+		lambda match: ('publisher', match['artist_name']),
+	),
+	(
+		r'(?P<artist_role>.+)は(?P<artist_name>.+)(から|より)お?借り',
+		lambda match: (match['artist_role'], match['artist_name']),
+	),
+	(
+		# ▼music
+		# nanashi
+		r'^((?P<bullet>.).+\n.+)(\n+(?P=bullet).+\n.+)+',
+
+		lambda match: [(match2['artist_role'], match2['artist_name']) for match2 in re.finditer(match['bullet'] + r'(?P<artist_role>.+)\n(?P<artist_name>.+)', match.group(0), flags = re.M)],
+	),
+	(
+		# music: nanashi
+		r'^.+([:：]).+(\n.+)?(\n+.+([:：]).+(\n.+)?)+',
+		lambda match: [(match2['artist_role'], match2['artist_name']) for match2 in re.finditer(r'^(?P<artist_role>.+)[:：](?P<artist_name>.+(\n.+)?)', match.group(0), flags = re.M)],
+	),
 ]
 
 kw_title = [
@@ -88,18 +107,20 @@ kw_title = [
 	# Title／Voc（Type）
 	r'Title／Voc（Type）',
 	# Title／Pro feat. Voc
-	r'Title／Pro feat. Voc',
+	r'Title／Pro feat\. Voc',
+	# Title／Profeat.Voc
+	r'Title／Profeat\.Voc',
 	# Title／Pro with Voc
 	r'Title／Pro with Voc',
 	# Title／Voc
 	r'Title／Voc',
-	# Title feat. VOC
-	r'Title feat. VOC',
 
 	# Pro - Title feat. Voc
-	r'Pro - Title feat. Voc'
+	r'Pro - Title feat\. Voc',
 		# DECO*27 - 二息歩行 (Reloaded) feat. 初音ミク
 		# https://www.youtube.com/watch?v=iM8d0SzJTIU
+	# Pro - Titlefeat.Voc
+	r'Pro - Titlefeat\.Voc',
 	# Pro - Title
 	r'Pro - Title',
 		# Kikuo - 君はできない子
@@ -125,6 +146,9 @@ kw_title = [
 	r'.*「Title」Type.*',
 		# 雪歌ユフによる「ハローストロボ」itikura_Remix
 		# http://www.nicovideo.jp/watch/sm16592999
+
+	# Title feat. VOC
+	r'Title feat\. VOC',
 
 	# Title
 	r'Title',

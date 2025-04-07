@@ -45,7 +45,7 @@ SEP = r'[／/-]'
 # separator artist roles
 SEP_ARTIST_ROLE = r'[：:　]'
 # separator and
-SEP_AND = r'(?:・|&|and|と)'
+SEP_AND = r'(?:・|&|and|と|、|[/])'
 
 # voice synth expand names
 VOC_EXPAND = [
@@ -95,7 +95,7 @@ def re_expand_pattern(pattern, lang = None):
 				kw_expand_lang[f'Type:{lang}'] = list_flat
 			#pattern = pattern.replace(placeholder, KW_EXPAND[placeholder].replace('.+', '|'.join(kw_expand_lang[f'Type:{lang}']) + '|.+'))
 			#pattern = pattern.replace(placeholder, KW_EXPAND[placeholder].replace('.+', '|'.join(kw_expand_lang[f'Type:{lang}'])))
-			pattern = pattern.replace(placeholder, KW_EXPAND[placeholder].replace('.+', '.*|.*'.join(kw_expand_lang[f'Type:{lang}'])))
+			pattern = pattern.replace(placeholder, KW_EXPAND[placeholder].replace('.+', '.*' + '.*|.*'.join(kw_expand_lang[f'Type:{lang}'])))
 		pattern = pattern.replace(placeholder, KW_EXPAND[placeholder])
 
 	# TODO: ja NFD to NFC
@@ -116,59 +116,56 @@ def extract(info):
 		'debug': [],
 	}
 
-	meta_found['debug'].append(info['title'])
-	meta_found['debug'].append(info['description'])
+	#meta_found['debug'].append(info['title'])
+	#meta_found['debug'].append(info['description'])
 
 	for lang in LANG:
 		# XXX: TESTING
 		if lang == 'zh':
 			continue
 
-		for artist_role in LANG[lang].kw_artist_role:
-			for pattern in LANG[lang].kw_artist_role[artist_role]:
-				match = re.search(fr'(?P<artist_role>{pattern})[^\s]*{SEP_ARTIST_ROLE}(?P<artist_name>.+)', info['description'], flags = re.I)
-				if match:
-					meta_found['artists'].append((artist_role, match['artist_name']))
-					break
+		# TODO: detect a block that is obviously credits, and don't give up on unrecognized roles
+			# example: 【洛天依/星尘/赤羽/苍穹】陟彼忘川 https://www.bilibili.com/video/av206333970/
+		#for artist_role in LANG[lang].kw_artist_role:
+		#	for pattern in LANG[lang].kw_artist_role[artist_role]:
+		#		for match in re.finditer(fr'(?P<artist_role>{pattern})[^\s]*{SEP_ARTIST_ROLE}(?P<artist_name>.+)', info['description'], flags = re.I):
+		#			meta_found['artists'].append((artist_role, match['artist_name']))
+		#			break
 
 		for label in LANG[lang].kw_url_label:
 			for pattern in LANG[lang].kw_url_label[label]:
-				match = re.search(fr'(?P<label>{pattern})(\s+)(?P<text>.+)', info['description'], flags = re.I)
-				if match:
+				for match in re.finditer(fr'(?P<label>{pattern})(\s+)(?P<text>.+)', info['description'], flags = re.I):
 					meta_found['urls'].append((label, match['text']))
 					break
 
 		for label in LANG[lang].kw_profile_label:
 			for pattern in LANG[lang].kw_profile_label[label]:
-				match = re.search(fr'(?P<label>{pattern})(?P<text>.+)', info['description'], flags = re.I)
-				if match:
-					meta_found['other'].append((label, match['text']))
+				for match in re.finditer(fr'(?P<label>{pattern})(?P<text>.+)', info['description'], flags = re.I):
+					meta_found['other'].append((label, match.group(0)))
 					break
 
 		for label in LANG[lang].kw_other_label:
 			for pattern in LANG[lang].kw_other_label[label]:
-				match = re.search(fr'(?P<label>{pattern})(?P<text>.+)', info['description'], flags = re.I)
-				if match:
+				for match in re.finditer(fr'(?P<label>{pattern})(?P<text>.+)', info['description'], flags = re.I):
 					meta_found['other'].append((label, match['text']))
 					break
 
 		if True:
-			for pattern in LANG[lang].kw_sentence:
-				match = re.search(pattern, info['description'], flags = re.I)
-				if match:
-					meta_found['artists'].append(('other', match.groups()))
-					break
+			for pattern, my_lambda in LANG[lang].kw_sentence:
+				for match in re.finditer(pattern, info['description'], flags = re.I | re.M):
+					meta_found['artists'] += my_lambda(match)
+					pass
 
 		if True:
 			for pattern in LANG[lang].kw_title:
 				pattern = re_expand_pattern(pattern, lang = lang)
-				match = re.search(pattern, info['title'], flags = re.I)
-				if match:
+				for match in re.finditer(pattern, info['title'], flags = re.I):
 					for item in list(match.groupdict().items()):
 						match item[0]:
 							case 'vocal' | 'artist name':
 								meta_found['artists'].append(item)
 							case _:
+								#key = next((key for key, values in kw_song_type.items() for value in values if value in search_term), None)
 								meta_found['other'].append(item)
 					break
 
@@ -184,18 +181,30 @@ def extract(info):
 if __name__ == '__main__':
 	# XXX: TESTING
 	import pickle
+	import pprint
+	import colorama
+	pp = pprint.PrettyPrinter(indent = 2)
 
-	with open('sc_song_add.py.ytdl_extract_info.-.pickle', 'rb') as file:
+	with open('sc_song_add.py.ytdl_extract_info.0-0.pickle', 'rb') as file:
 		data = pickle.load(file)
 
 	for call in data:
-		try:
-			if 'entries' in data[call]:
-				for entry in data[call]['entries']:
-					x = extract(entry)
-					print(x)
-			else:
-				x = extract(data[call])
-				print(x)
-		except TypeError:
-			pass
+		if 'entries' in data[call]:
+			for entry in data[call]['entries']:
+				print(colorama.Fore.BLUE + entry['title'] + colorama.Fore.RESET)
+				print(colorama.Fore.BLUE + entry['description'] + colorama.Fore.RESET)
+				print('————————————————————')
+				x = extract(entry)
+				pp.pprint(x)
+				print()
+				print('————————————————————')
+				print()
+		else:
+			print(colorama.Fore.BLUE + data[call]['title'] + colorama.Fore.RESET)
+			print(colorama.Fore.BLUE + data[call]['description'] + colorama.Fore.RESET)
+			print('————————————————————')
+			x = extract(data[call])
+			pp.pprint(x)
+			print()
+			print('————————————————————')
+			print()

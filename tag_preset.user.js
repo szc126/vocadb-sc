@@ -63,6 +63,15 @@ const tags_api_path = {
 	'Song': 'songTags',
 }
 
+const entry_type_api_path = {
+	'Ar': 'artists',
+	'Artist': 'artists',
+	'Al': 'albums',
+	'Album': 'albums',
+	'S': 'songs',
+	'Song': 'songs',
+}
+
 const observer = new MutationObserver(mutations => {
 	mutations.forEach(record => {
 		record.addedNodes.forEach(node => {
@@ -85,7 +94,7 @@ observer.observe(document.body, {
 	childList: true,
 });
 
-function main() {
+async function main() {
 	let div = document.createElement("div");
 	div.id = 'mytagspreset'
 	div.classList.add("btn-group");
@@ -100,7 +109,7 @@ function main() {
 	const entry_id = url_split[url_split.length - 1];
 	const entry_type = url_split[1];
 
-	fetch(
+	const current_tags = await fetch(
 		'/api/users/current/' + tags_api_path[entry_type] + '/' + entry_id,
 		{
 			method: 'GET',
@@ -108,24 +117,36 @@ function main() {
 				'Content-Type': 'application/json; charset=utf-8',
 			},
 		}
-	).then(response => response.json()
-	).then(data_old => {
-		for (let i = 0; i < tag_presets.length; i++) {
-			let payload = tag_presets[i].slice(1).map(tag_name => {
+	).then(response => response.json());
+
+	const tag_suggestions = await fetch(
+		'/api/' + entry_type_api_path[entry_type] + '/' + entry_id + '/tagSuggestions',
+		{
+			method: 'GET',
+			headers: {
+				'Content-Type': 'application/json; charset=utf-8',
+			},
+		}
+	).then(response => response.json());
+
+	tag_presets.concat(tag_suggestions.map(tag => ['💡' + tag.tag.name, tag.tag.name])).forEach(tag_preset => {
+			console.log(tag_preset);
+
+			let payload = tag_preset.slice(1).map(tag_name => {
 				return {
 					'name': tag_name,
 				}
 			});
 			let b = document.createElement("a");
-			b.innerText = tag_presets[i][0];
+			b.innerText = tag_preset[0];
 			b.addEventListener('click', (event) => apply_tag(event, entry_type, entry_id, payload));
 			b.classList.add("btn");
 			b.classList.add("btn-default");
 			b.style.fontSize = '125%'; // [b] this line is a pair with line [a]
 
 			/* ChatGPT start */
-			let tags_added = tag_presets[i].slice(1).every(tag_name =>
-				data_old.some(item => item.tag.name === tag_name)
+			let tags_added = tag_preset.slice(1).every(tag_name =>
+				current_tags.some(item => item.tag.name === tag_name)
 			);
 			if (tags_added) {
 				b.classList.remove('btn-default');
@@ -134,8 +155,6 @@ function main() {
 			/* ChatGPT end */
 
 			div.append(b);
-		}
-
 	});
 }
 

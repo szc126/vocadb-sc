@@ -130,31 +130,31 @@ async function main() {
 	).then(response => response.json());
 
 	tag_presets.concat(tag_suggestions.map(tag => ['💡' + tag.tag.name, tag.tag.name])).forEach(tag_preset => {
-			console.log(tag_preset);
+		console.log(tag_preset);
 
-			let payload = tag_preset.slice(1).map(tag_name => {
-				return {
-					'name': tag_name,
-				}
-			});
-			let b = document.createElement("a");
-			b.innerText = tag_preset[0];
-			b.addEventListener('click', (event) => apply_tag(event, entry_type, entry_id, payload));
-			b.classList.add("btn");
-			b.classList.add("btn-default");
-			b.style.fontSize = '125%'; // [b] this line is a pair with line [a]
-
-			/* ChatGPT start */
-			let tags_added = tag_preset.slice(1).every(tag_name =>
-				current_tags.some(item => item.tag.name === tag_name)
-			);
-			if (tags_added) {
-				b.classList.remove('btn-default');
-				b.classList.add('btn-success');
+		let payload = tag_preset.slice(1).map(tag_name => {
+			return {
+				'name': tag_name,
 			}
-			/* ChatGPT end */
+		});
+		let b = document.createElement("a");
+		b.innerText = tag_preset[0];
+		b.addEventListener('click', (event) => apply_tag(event, entry_type, entry_id, payload));
+		b.classList.add("btn");
+		b.classList.add("btn-default");
+		b.style.fontSize = '125%'; // [b] this line is a pair with line [a]
 
-			div.append(b);
+		/* ChatGPT start */
+		let tags_added = tag_preset.slice(1).every(tag_name =>
+			current_tags.some(item => item.tag.name === tag_name)
+		);
+		if (tags_added) {
+			b.classList.remove('btn-default');
+			b.classList.add('btn-success');
+		}
+		/* ChatGPT end */
+
+		div.append(b);
 	});
 }
 

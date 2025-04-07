@@ -34,7 +34,7 @@ observer.observe(document.body, {
 	childList: true,
 });
 
-let sets = [
+let tag_presets = [
 	['3D原', 'human original', 'original out of scope'],
 	['A', 'anime song cover'],
 	['G', 'video game song cover'],
@@ -70,8 +70,8 @@ let sets = [
 	['lyrics from poetry'],
 	['title pun'],
 ];
-sets.forEach((_, i) => {
-	if (sets[i].length === 1) sets[i] = sets[i].concat(sets[i])
+tag_presets.forEach((_, i) => {
+	if (tag_presets[i].length === 1) tag_presets[i] = tag_presets[i].concat(tag_presets[i])
 });
 
 function main() {
@@ -96,14 +96,14 @@ function main() {
 		}
 	).then(response => response.json()
 	).then(data_old => {
-		for (let i = 0; i < sets.length; i++) {
+		for (let i = 0; i < tag_presets.length; i++) {
 			let b = document.createElement("a");
-			b.innerHTML = sets[i][0];
+			b.innerHTML = tag_presets[i][0];
 			b.addEventListener("click", function(event) {
 				let payload = [];
-				for (let j = 1; j < sets[i].length; j++) {
+				for (let j = 1; j < tag_presets[i].length; j++) {
 					payload.push({
-						'name': sets[i][j],
+						'name': tag_presets[i][j],
 					});
 				}
 				fetch(
@@ -138,7 +138,7 @@ function main() {
 			b.style.fontSize = '125%'; // goes with the line way up above
 
 			/* ChatGPT start */
-			let tags_added = sets[i].slice(1).every(tag_name =>
+			let tags_added = tag_presets[i].slice(1).every(tag_name =>
 				data_old.some(item => item.tag.name === tag_name)
 			);
 			if (tags_added) {

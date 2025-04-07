@@ -27,24 +27,21 @@
 
 // see also: https://gitlab.com/Hans5958-MWS/vocadb-docs/-/snippets/4801219
 
-// shoutout to ChatGPT for figuring out where to put the darned async/await keywords
-// also. does the timeout cancel out the benefit (async) of using fetch(). lol.
+let server = false;
+GM.getValue('server', 'vocadb.net').then((value) => {
+	server = value;
+});
+
+let running = false;
 
 // domains:
-	// domains corresponding to each set of instructions (the stuff below)
+	// domains to apply the following data to
 // a_query_selectors:
 	// CSS selectors for PV links
 // button_parent:
 	// the element that will contain the link to the VocaDB entry, defined relative to a PV link
 // nav_query_selectors:
-	// CSS selectors for the elements that will contain the link to start this script
-
-let server = false;
-(async () => {
-	server = await GM.getValue('server', 'vocadb.net');
-})();
-
-let running = false;
+	// CSS selectors for locations to inject the "Scan" button
 
 var services = {
 	'NicoNicoDouga': {
@@ -111,7 +108,7 @@ var services = {
 	},
 }
 
-async function process_urls(service) { // ASYNC
+async function process_urls(service) {
 	// message on YouTube channels
 	if (typeof ytInitialData !== 'undefined' && ytInitialData?.metadata?.channelMetadataRenderer?.externalId) {
 		prompt('For a faster option, consider instead:', 'https://' + server + '/SongList/Import');
@@ -172,13 +169,13 @@ async function process_urls(service) { // ASYNC
 	scan_stop();
 }
 
-async function get_song_entry(url) { // ASYNC
+async function get_song_entry(url) {
 	let data_cached = await GM.getValue(url);
 	if (data_cached) {
 		return data_cached;
 	}
 
-	await new Promise(resolve => setTimeout(resolve, 2000)); // AWAIT
+	await new Promise(resolve => setTimeout(resolve, 2000));
 
 	return fetch('https://' + server + '/api/songs?' + new URLSearchParams({
 		'query': url,
@@ -187,15 +184,12 @@ async function get_song_entry(url) { // ASYNC
 	).then(data => {
 		if (data.items.length > 1) {
 			prompt('Notice: Found multiple song entries for:', url);
-		}
-		if (data.items.length > 0) {
+		} else if (data.items.length > 0) {
 			GM.setValue(url, data.items[0]);
 
 			return data.items[0];
 		}
 	});
-
-	return false;
 }
 
 function create_song_button(url, song_entry) {
@@ -205,10 +199,14 @@ function create_song_button(url, song_entry) {
 	let a = document.createElement('a');
 	a.style.background = song_entry ? 'lime' : 'magenta';
 	a.style.padding = '0.5em';
-	a.href = song_entry ? 'https://' + server + '/S/' + song_entry.id : 'https://' + server + '/Song/Create?' + new URLSearchParams({
+	a.href = song_entry ?
+		'https://' + server + '/S/' + song_entry.id :
+		'https://' + server + '/Song/Create?' + new URLSearchParams({
 		'pvUrl': url,
 	});
-	a.title = song_entry ? [song_entry.name, song_entry.songType, song_entry.artistString, song_entry.tags.map(tag => tag.tag.name).join(', ')].join('\n') : '';
+	a.title = song_entry ?
+		[song_entry.name, song_entry.songType, song_entry.artistString, song_entry.tags.map(tag => tag.tag.name).join(', ')].join('\n') :
+		'';
 	a.target = '_blank'; // TODO: also make the video <a> open in a new tab?
 
 	let text = document.createTextNode(server);
@@ -271,7 +269,6 @@ function add_main_button(service) {
 function main() {
 	GM.registerMenuCommand('Change server from ' + server, function() {
 		GM.setValue('server', prompt('Change server from ' + server + ' to:', server));
-		server = server;
 	});
 
 	for (let service in services) {

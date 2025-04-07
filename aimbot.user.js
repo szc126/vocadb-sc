@@ -65,7 +65,7 @@ var services = {
 	'NicoNicoDouga-Nicolog': {
 		'domains': ['www.nicolog.jp'],
 		'a_query_selectors': [
-			'.text-center a',
+			'table .text-center a',
 		],
 		'button_parent': function(a) {
 			return a.parentNode.parentNode.nextElementSibling;

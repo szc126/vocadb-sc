@@ -143,6 +143,7 @@ async function main() {
 		b.classList.add("btn");
 		b.classList.add("btn-default");
 		b.style.fontSize = '125%'; // [b] this line is a pair with line [a]
+		b.title = tag_preset.slice(1).join('\n');
 
 		/* ChatGPT start */
 		let tags_added = tag_preset.slice(1).every(tag_name =>

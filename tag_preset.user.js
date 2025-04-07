@@ -111,41 +111,14 @@ function main() {
 	).then(response => response.json()
 	).then(data_old => {
 		for (let i = 0; i < tag_presets.length; i++) {
+			let payload = tag_presets[i].slice(1).map(tag_name => {
+				return {
+					'name': tag_name,
+				}
+			});
 			let b = document.createElement("a");
 			b.innerText = tag_presets[i][0];
-			b.addEventListener("click", function(event) {
-				let payload = tag_presets[i].slice(1).map(tag_name => {
-					return {
-						'name': tag_name,
-					}
-				});
-				fetch(
-					'/api/users/current/' + tags_api_path[entry_type] + '/' + entry_id,
-					{
-						method: 'GET',
-						headers: {
-							'Content-Type': 'application/json; charset=utf-8',
-						},
-					}
-				).then(response => response.json()
-				).then(data => {
-					fetch(
-						'/api/users/current/' + tags_api_path[entry_type] + '/' + entry_id,
-						{
-							method: 'PUT',
-							headers: {
-								'Content-Type': 'application/json; charset=utf-8',
-							},
-							body: JSON.stringify(data.filter(tag => tag.selected).map(tag => tag.tag).concat(payload)),
-						}
-					).then(response => {
-						if (response.status >= 200 && response.status < 300) {
-							b.classList.remove('btn-default');
-							b.classList.add('btn-success');
-						}
-					})
-				});
-			});
+			b.addEventListener('click', (event) => apply_tag(event, entry_type, entry_id, payload));
 			b.classList.add("btn");
 			b.classList.add("btn-default");
 			b.style.fontSize = '125%'; // [b] this line is a pair with line [a]
@@ -165,3 +138,33 @@ function main() {
 
 	});
 }
+
+function apply_tag(event, entry_type, entry_id, payload) {
+	let b = event.target;
+	fetch(
+		'/api/users/current/' + tags_api_path[entry_type] + '/' + entry_id,
+		{
+			method: 'GET',
+			headers: {
+				'Content-Type': 'application/json; charset=utf-8',
+			},
+		}
+	).then(response => response.json()
+	).then(data => {
+		fetch(
+			'/api/users/current/' + tags_api_path[entry_type] + '/' + entry_id,
+			{
+				method: 'PUT',
+				headers: {
+					'Content-Type': 'application/json; charset=utf-8',
+				},
+				body: JSON.stringify(data.filter(tag => tag.selected).map(tag => tag.tag).concat(payload)),
+			}
+		).then(response => {
+			if (response.status >= 200 && response.status < 300) {
+				b.classList.remove('btn-default');
+				b.classList.add('btn-success');
+			}
+		})
+	});
+};

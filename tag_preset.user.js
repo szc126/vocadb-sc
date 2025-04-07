@@ -95,15 +95,15 @@ observer.observe(document.body, {
 });
 
 async function main() {
-	let div = document.createElement("div");
+	let div = document.createElement('div');
 	div.id = 'mytagspreset'
-	div.classList.add("btn-group");
-	div.classList.add("navbar-languageBar");
+	div.classList.add('btn-group');
+	div.classList.add('navbar-languageBar');
 	div.style.display = 'flex';
 	div.style.flexWrap = 'wrap';
 	div.style.fontSize = '1em'; // [a] this line is a pair with line [b]
 	div.style.letterSpacing = '-0.1em';
-	document.getElementsByClassName("sidebar-nav")[0].append(div);
+	document.getElementsByClassName('sidebar-nav')[0].append(div);
 
 	const url_split = window.location.pathname.split('/');
 	const entry_id = url_split[url_split.length - 1];
@@ -137,11 +137,11 @@ async function main() {
 				'name': tag_name,
 			}
 		});
-		let b = document.createElement("a");
+		let b = document.createElement('a');
 		b.innerText = tag_preset[0];
 		b.addEventListener('click', (event) => apply_tag(event, entry_type, entry_id, payload));
-		b.classList.add("btn");
-		b.classList.add("btn-default");
+		b.classList.add('btn');
+		b.classList.add('btn-default');
 		b.style.fontSize = '125%'; // [b] this line is a pair with line [a]
 		b.title = tag_preset.slice(1).join('\n');
 

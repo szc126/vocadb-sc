@@ -550,7 +550,7 @@ def register_videos(infos_working) -> None:
 				'additionalNames': info['vocadb_album_track']['song']['additionalNames'],
 				'displayName': info['vocadb_album_track']['song']['defaultName'],
 			}
-			reformed['entry']['entryTypeName'] = info['vocadb_album_track']['song']['songType']
+			reformed['entry']['entryTypeName'] = info['vocadb_album_track']['song']['songType'] # why does normal `entryTypeName` say `Original song` while `songType` says `Original`
 			reformed['matchProperty'] = 'SC:album playlist'
 			matches = [reformed] + matches
 

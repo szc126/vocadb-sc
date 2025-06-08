@@ -1,7 +1,7 @@
 // ==UserScript==
 // @namespace   szc
 // @name        VocaDB tag presets
-// @version     2025-04-07
+// @version     2025-06-09
 // @author      u126
 // @description buttons to add tags with one click
 // @homepageURL https://github.com/szc126/vocadb-sc
@@ -16,43 +16,71 @@
 'use strict';
 
 let tag_presets = [
-	['翻', 'human original', 'original out of scope'],
-	['A', 'anime song cover'],
-	['G', 'video game song cover'],
-	['TV', 'TV show song cover'],
-	['M', 'movie song cover'],
+	['人', 'human original'],
+	['ｱﾆ', 'anime song cover'],
+	['🎮', 'video game song cover'],
+	['📺', 'TV show song cover'],
+	['🎬', 'movie song cover'],
 
-	['自翻', 'self-cover'],
-	['自混', 'self-remix'],
-	['ｼｮｰﾄ', 'short version'],
-	['ﾌﾙ', 'extended version'],
-
-	['淸', 'a cappella'],
-	['晒', 'editor PV'],
-	['ﾃﾞﾓ','voicebank demo'],
-	['詰合pv', 'multiple song PV'],
+	['翻', 'self-cover'],
+	['混', 'self-remix'],
+	['短', 'short version'],
+	['增', 'extended version'],
+	['耳ｺ', '耳コピ'],
 
 	['跨', 'unsupported language'],
-	['sv', 'Synthesizer V AI cross-lingual singing synthesis'],
-	['換', 'changed language'],
-	['填', 'changed lyrics'],
-	['ﾊﾟﾛ','parody'],
+	['譯', 'changed language'],
+	['改', 'changed lyrics'],
+	['增', 'additional lyrics'],
+	['ﾊﾟﾛ', 'parody'],
 
+	['淸', 'a cappella'], // 清唱
+	['純', 'no lyrics'], // 純音樂
+	['喋', 'speech vocals'],
+	['詠', 'poemloid'],
+	['拾', 'lyrics from poetry'],
+
+	['晒', 'editor PV'],
 	['utau📥️', 'UTAU voicebank release'],
-	['mp3📥️', 'free'],
-	['ｵｹ📥️', 'karaoke available'],
-	['ust📥️', 'UST available'],
-	['vsq📥️', 'VSQ available'],
-	['svp📥️', 'SVP available'],
+	['ﾃﾞﾓ', 'voicebank demo'],
+	['β', 'beta voicebank'],
+	['升', 'upgraded voicebank'],
+	['tri', 'trial voicebank'],
+	['煎', 'remastered cover'], // 二番煎じ
+	['unc', 'unconfirmed vocalists'],
+	['c', 'confirmed original bank'],
 
-	['vb不詳', 'unconfirmed vocalists'],
-	['vb升', 'upgraded voicebank'],
+	['mp3📥️', 'free'],
+	['ｵｹ', 'karaoke available'],
+	['ust', 'UST available'],
+	['vsq', 'VSQ available'],
+
+	['svp📥️', 'SVP available'],
 	['svﾗｲﾄ', 'Synthesizer V lite version voice'],
-	['ai絵', 'AI generated art'],
-	['公式絵', 'official art PV'],
+	['sv跨語言', 'Synthesizer V AI cross-lingual singing synthesis'],
+
+	['似', 'original art imitation'],
+	['官方', 'official art PV'],
+	['AI', 'AI generated art'],
+	['拾', 'uncredited art PV'],
 
 	['MMD'],
-	['良調声'],
+	['手書', '手書きPV'],
+	['ｱﾆ', '2D animated PV'],
+	['文字', '文字PV'],
+
+	['🏫', '兒歌'],
+	['🪖', '軍歌'],
+	['講', '講座'],
+	['詰', 'multiple song PV'],
+	['調', 'good tuning'],
+	['雙', 'bilingual'],
+	['多', 'polylingual'],
+	['饒', 'rapping'],
+
+	['ﾋﾟｱﾉ', 'piano'],
+	['ｱｺｷﾞ', 'acoustic guitar'],
+	['ｴﾚｷ', 'electric guitar'],
 ];
 GM.getValue('additional_tag_presets', []).then((value) => {
 	tag_presets = tag_presets.concat(value);

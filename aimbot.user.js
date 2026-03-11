@@ -13,6 +13,7 @@
 // @grant       GM.setValue
 // @grant       GM.getValue
 // @grant       GM.registerMenuCommand
+// @grant       GM.notification
 // ==/UserScript==
 
 'use strict';
@@ -196,11 +197,17 @@ function scan_start(service) {
 		return;
 	}
 
+	GM.notification({
+		text: 'Scanning…',
+	});
 	running = true;
 	process_urls(service);
 }
 
 function scan_stop() {
+	GM.notification({
+		text: 'Done scanning.',
+	});
 	running = false;
 }
 

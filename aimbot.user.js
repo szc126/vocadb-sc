@@ -6,19 +6,10 @@
 // @description for extreme gamers only
 // @homepageURL https://github.com/szc126/vocadb-sc
 // @icon        https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/72x72/1faf5.png
-// @match       https://www.nicovideo.jp/user/*
-// @match       https://www.nicovideo.jp/mylist/*
-// @match       https://www.nicovideo.jp/search/*
-// @match       https://www.nicovideo.jp/tag/*
-// @match       https://www.nicovideo.jp/watch/*
+// @match       https://www.nicovideo.jp/*
 // @match       https://www.nicolog.jp/user/*
-// @match       https://www.youtube.com/*/videos
-// @match       https://www.youtube.com/*/search
-// @match       https://www.youtube.com/hashtag/*
-// @match       https://www.youtube.com/watch?*
-// @match       https://www.youtube.com/results?*
-// @match       https://space.bilibili.com/*
-// @match       https://search.bilibili.com/*
+// @match       https://www.youtube.com/*
+// @match       https://*.bilibili.com/*
 // @grant       GM.setValue
 // @grant       GM.getValue
 // @grant       GM.registerMenuCommand

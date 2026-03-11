@@ -29,31 +29,31 @@ let running = false;
 
 // domains:
 	// domains to apply the following data to
-// a_query_selectors:
+// aSelectors:
 	// CSS selectors for PV links
-// button_parent:
+// aParent:
 	// the element that will contain the link to the VocaDB entry, defined relative to a PV link
 
 var services = {
 	'NicoNicoDouga': {
-		'domains': ['www.nicovideo.jp'],
-		'a_query_selectors': [
+		domains: ['www.nicovideo.jp'],
+		aSelectors: [
 			'a.NC-MediaObject-contents', // /user/
 			'.itemTitle a', // /search/ /tag/
 			'a[data-decoration-video-id]', // /watch/ recommended sidebar
 		],
-		'button_parent': function(a) {
+		aParent: function(a) {
 			if (a.classList.contains('NC-MediaObject-contents')) return a.parentNode;
 			if (a.hasAttribute('data-decoration-video-id')) return a;
 			return a.parentNode.parentNode;
 		},
 	},
 	'NicoNicoDouga-Nicolog': {
-		'domains': ['www.nicolog.jp'],
-		'a_query_selectors': [
+		domains: ['www.nicolog.jp'],
+		aSelectors: [
 			'table .text-center a',
 		],
-		'button_parent': function(a) {
+		aParent: function(a) {
 			return a.parentNode.parentNode.nextElementSibling;
 		},
 	},
@@ -62,8 +62,8 @@ var services = {
 		// i explode you with hammers
 		// TODO: refuse to process further after N unregistered videos
 
-		'domains': ['www.youtube.com'],
-		'a_query_selectors': [
+		domains: ['www.youtube.com'],
+		aSelectors: [
 			'h3.ytd-rich-grid-media a', // channel, hashtag; `.ytd-rich-grid-media` is necessary (user comments are `h3.ytd-comment-view-model`)
 			'a.ytd-compact-video-renderer', // watch recommended sidebar
 			'a#video-title', // channel search
@@ -71,17 +71,17 @@ var services = {
 			'h3.yt-lockup-title a', // VORAPIS: channel, hashtag, results, channel search
 			'a#related-video', // VORAPIS: watch recommended sidebar
 		],
-		'button_parent': function(a) {
+		aParent: function(a) {
 			return a.parentNode;
 		},
 	},
 	'Bilibili': {
-		'domains': ['bilibili.com'],
-		'a_query_selectors': [
+		domains: ['bilibili.com'],
+		aSelectors: [
 			'.bili-video-card__title a', // space.bilibili.com
 			'.bili-video-card__info--right > a', // search.bilibili.com
 		],
-		'button_parent': function(a) {
+		aParent: function(a) {
 			return a.parentNode;
 		},
 	},
@@ -102,7 +102,7 @@ async function process_urls(service) {
 		}
 	}
 
-	let as = document.querySelectorAll(services[service].a_query_selectors);
+	let as = document.querySelectorAll(services[service].aSelectors);
 	for (let a of as) {
 		if (!running) {
 			scan_stop();
@@ -140,7 +140,7 @@ async function process_urls(service) {
 
 		let song_entry = await get_song_entry(url); // AWAIT
 		let button = create_song_button(url, song_entry);
-		services[service].button_parent(a).appendChild(button);
+		services[service].aParent(a).appendChild(button);
 		if (song_entry) {
 			a.dataset.vocadbSongEntryId = song_entry.id;
 		}

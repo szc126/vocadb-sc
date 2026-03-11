@@ -38,9 +38,9 @@ var services = {
 	'NicoNicoDouga': {
 		domains: ['www.nicovideo.jp'],
 		aSelectors: [
-			'a.NC-MediaObject-contents', // /user/
-			'.itemTitle a', // /search/ /tag/
-			'a[data-decoration-video-id]', // /watch/ recommended sidebar
+			'a.NC-MediaObject-contents', // user
+			'.itemTitle a', // search, tag
+			'a[data-decoration-video-id]', // watch recommended sidebar
 		],
 		aParent: function(a) {
 			if (a.classList.contains('NC-MediaObject-contents')) return a.parentNode;

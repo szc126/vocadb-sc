@@ -64,9 +64,12 @@ var services = {
 
 		'domains': ['www.youtube.com'],
 		'a_query_selectors': [
-			'h3.ytd-rich-grid-media a', // channel and hashtag; `.ytd-rich-grid-media` is necessary (user comments are `h3.ytd-comment-view-model`)
-			'a.ytd-compact-video-renderer', // recommended sidebar
+			'h3.ytd-rich-grid-media a', // channel, hashtag; `.ytd-rich-grid-media` is necessary (user comments are `h3.ytd-comment-view-model`)
+			'a.ytd-compact-video-renderer', // watch recommended sidebar
 			'a#video-title', // channel search
+
+			'h3.yt-lockup-title a', // VORAPIS: channel, hashtag, results, channel search
+			'a#related-video', // VORAPIS: watch recommended sidebar
 		],
 		'button_parent': function(a) {
 			return a.parentNode;

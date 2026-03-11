@@ -41,8 +41,6 @@ let running = false;
 	// CSS selectors for PV links
 // button_parent:
 	// the element that will contain the link to the VocaDB entry, defined relative to a PV link
-// nav_query_selectors:
-	// CSS selectors for locations to inject the "Scan" button
 
 var services = {
 	'NicoNicoDouga': {
@@ -57,9 +55,6 @@ var services = {
 			if (a.hasAttribute('data-decoration-video-id')) return a;
 			return a.parentNode.parentNode;
 		},
-		'nav_query_selectors': [
-			'.nico-CommonHeaderRoot > div:first-child > div:first-child > div:first-child',
-		],
 	},
 	'NicoNicoDouga-Nicolog': {
 		'domains': ['www.nicolog.jp'],
@@ -69,9 +64,6 @@ var services = {
 		'button_parent': function(a) {
 			return a.parentNode.parentNode.nextElementSibling;
 		},
-		'nav_query_selectors': [
-			'th:first-of-type',
-		],
 	},
 	'Youtube': {
 		// if you spam this on lists of non-vocaloid videos
@@ -87,12 +79,6 @@ var services = {
 		'button_parent': function(a) {
 			return a.parentNode;
 		},
-		'nav_query_selectors': [
-			//'#chips-content', // channel, "sort by" menu // channels with few videos do not have the "sort by" menu
-			'.yt-tab-group-shape-wiz__tabs', // channel, "home" "videos" "shorts" tab bar
-			'#offer-module', // recommended sidebar
-			'#center', // /results
-		],
 	},
 	'Bilibili': {
 		'domains': ['bilibili.com'],
@@ -103,10 +89,6 @@ var services = {
 		'button_parent': function(a) {
 			return a.parentNode;
 		},
-		'nav_query_selectors': [
-			'.nav-bar__main-left', // space.bilibili.com 投稿
-			'.vui_tabs--nav', // search.bilibili.com
-		],
 	},
 }
 
@@ -224,65 +206,26 @@ function scan_start(service) {
 	}
 
 	running = true;
-	document.getElementById('aimbot-style').innerText = '.aimbot-button-start { display: none; }';
 	process_urls(service);
 }
 
 function scan_stop() {
 	running = false;
-	document.getElementById('aimbot-style').innerText = '.aimbot-button-stop { display: none; }';
 }
 
-function add_main_button(service) {
-	let style = document.createElement('style');
-	style.id = 'aimbot-style';
-	style.innerText = '.aimbot-button-stop { display: none; }';
-	document.head.appendChild(style);
+GM.registerMenuCommand('Change server from ' + server, function() {
+	GM.setValue('server', prompt('Change server from ' + server + ' to:', server));
+});
 
-	let navs = document.querySelectorAll(services[service].nav_query_selectors);
-	for (let nav of navs) {
-		// have to construct a new `button` every time. sad
-
-		// IIFE so that I can restate `let button` instead of making copy-and-paste mistakes related to variable names
-		(function() {
-			let button = document.createElement('button');
-			button.addEventListener('click', () => scan_start(service));
-			button.style.background = 'cyan';
-			button.classList.add('aimbot-button-start');
-
-			button.appendChild(document.createTextNode('Scan for ' + server));
-
-			nav.appendChild(button);
-		})();
-
-		(function() {
-			let button = document.createElement('button');
-			button.addEventListener('click', scan_stop);
-			button.style.background = 'magenta';
-			button.classList.add('aimbot-button-stop');
-
-			button.appendChild(document.createTextNode('Stop scanning for ' + server));
-
-			nav.appendChild(button);
-		})();
-	}
-}
-
-function main() {
-	GM.registerMenuCommand('Change server from ' + server, function() {
-		GM.setValue('server', prompt('Change server from ' + server + ' to:', server));
-	});
-
+GM.registerMenuCommand('Start scanning', function() {
 	for (let service in services) {
 		let domains = services[service].domains;
 		if (domains.some(domain => window.location.href.includes(domain))) {
-			add_main_button(service);
+			scan_start(service);
 		}
 	}
-}
+});
 
-// add 2-second delay to let whatever fancy javascript framework finish rendering
-setTimeout(function() {
-	//alert('vocadb song add script is ready');
-	main();
-}, 2000);
+GM.registerMenuCommand('Stop scanning', function() {
+	scan_stop();
+});

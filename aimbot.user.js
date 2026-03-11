@@ -1,7 +1,7 @@
 // ==UserScript==
 // @namespace   szc
 // @name        VocaDB aimbot 2024
-// @version     2025-04-07
+// @version     2026-03-11
 // @author      u126
 // @description for extreme gamers only
 // @homepageURL https://github.com/szc126/vocadb-sc
@@ -26,7 +26,7 @@
 
 'use strict';
 
-// see also: https://gitlab.com/Hans5958-MWS/vocadb-docs/-/snippets/4801219
+// see also: https://gitlab.com/Hans5958-MWS/vocadb/-/blob/master/userscripts/aimbot/aimbot.user.js
 
 let server = false;
 GM.getValue('server', 'vocadb.net').then((value) => {
@@ -80,7 +80,7 @@ var services = {
 
 		'domains': ['www.youtube.com'],
 		'a_query_selectors': [
-			'h3.ytd-rich-grid-media a', // channel and hashtag; the .ytd-rich-grid-media is necessary; user comments are h3.ytd-comment-view-model
+			'h3.ytd-rich-grid-media a', // channel and hashtag; `.ytd-rich-grid-media` is necessary (user comments are `h3.ytd-comment-view-model`)
 			'a.ytd-compact-video-renderer', // recommended sidebar
 			'a#video-title', // channel search
 		],
@@ -219,7 +219,7 @@ function create_song_button(url, song_entry) {
 
 function scan_start(service) {
 	if (running) {
-		// do not allow concurrent scanning of the same list of videos
+		// do not concurrently run twice
 		return;
 	}
 

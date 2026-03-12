@@ -31,7 +31,7 @@ let running = false;
 // aParent:
 	// the element that will contain the link to the VocaDB entry, defined relative to a PV link
 
-var services = {
+const services = {
 	'NicoNicoDouga': {
 		domains: ['www.nicovideo.jp'],
 		aSelectors: [
@@ -99,8 +99,8 @@ async function process_urls(service) {
 		}
 	}
 
-	let as = document.querySelectorAll(services[service].aSelectors);
-	for (let a of as) {
+	const as = document.querySelectorAll(services[service].aSelectors);
+	for (const a of as) {
 		if (!running) {
 			scan_stop();
 			return;
@@ -108,35 +108,34 @@ async function process_urls(service) {
 
 		let url = a.href;
 
-		// allow running the script multiple times in one session.
-		// but do not look up our own links ofc
+		// when running the script multiple times in one session
+		// do not look up our own links
 		if (url.indexOf(server) > 0) {
 			continue;
 		};
 
-		// allow running the script multiple times in one session.
+		// when running the script multiple times in one session
 		// skip songs that we have already found
 		if ('vocadbSongEntryId' in a.dataset) {
 			continue;
 		}
 
-		// skip NND ad links (the video ID is not embedded in the link)
+		// skip NND ad links. the video ID is not embedded in the link
 		if (url.indexOf('api.nicoad.nicovideo.jp') > 0) {
 			continue;
 		};
 
-		// remove tracking garbage from URLs
+		// TODO: destroy the old "create an entry link" when running the script again?
+
+		// normalize
+		url = url.replace('nicolog.jp', 'nicovideo.jp');
+		// remove tracking garbage
 		// to aid caching
 		url = url.replace(/\?spm_id=.+$/, ''); // bilibili
 		url = url.replace(/&pp=.+$/, ''); // YouTube
 
-		// TODO: destroy the old "create an entry link" when running the script again?
-
-		// normalize nicolog
-		url = url.replace('nicolog.jp', 'nicovideo.jp');
-
-		let song_entry = await get_song_entry(url); // AWAIT
-		let button = create_song_button(url, song_entry);
+		const song_entry = await get_song_entry(url);
+		const button = create_song_button(url, song_entry);
 		services[service].aParent(a).appendChild(button);
 		if (song_entry) {
 			a.dataset.vocadbSongEntryId = song_entry.id;
@@ -146,7 +145,7 @@ async function process_urls(service) {
 }
 
 async function get_song_entry(url) {
-	let data_cached = await GM.getValue(url);
+	const data_cached = await GM.getValue(url);
 	if (data_cached) {
 		return data_cached;
 	}
@@ -172,20 +171,20 @@ function create_song_button(url, song_entry) {
 	// using <a> instead of <button>,
 	// so that i can open multiple links at once
 	// using extensions like Snap Links
-	let a = document.createElement('a');
+	const a = document.createElement('a');
 	a.style.background = song_entry ? 'lime' : 'magenta';
 	a.style.padding = '0.5em';
 	a.href = song_entry ?
 		'https://' + server + '/S/' + song_entry.id :
 		'https://' + server + '/Song/Create?' + new URLSearchParams({
-		'pvUrl': url,
-	});
+			'pvUrl': url,
+		});
 	a.title = song_entry ?
 		[song_entry.name, song_entry.songType, song_entry.artistString, song_entry.tags.map(tag => tag.tag.name).join(', ')].join('\n') :
 		'';
 	a.target = '_blank'; // TODO: also make the video <a> open in a new tab?
 
-	let text = document.createTextNode(server);
+	const text = document.createTextNode(server);
 	a.appendChild(text);
 
 	return a;
@@ -217,8 +216,8 @@ GM.registerMenuCommand('Change server…', function() {
 });
 
 GM.registerMenuCommand('Start scanning', function() {
-	for (let service in services) {
-		let domains = services[service].domains;
+	for (const service in services) {
+		const domains = services[service].domains;
 		if (domains.some(domain => window.location.href.includes(domain))) {
 			scan_start(service);
 		}

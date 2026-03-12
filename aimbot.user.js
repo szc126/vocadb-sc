@@ -14,17 +14,14 @@
 // @grant       GM.getValue
 // @grant       GM.registerMenuCommand
 // @grant       GM.notification
+// @top-level-await
 // ==/UserScript==
 
 'use strict';
 
 // see also: https://gitlab.com/Hans5958-MWS/vocadb/-/blob/master/userscripts/aimbot/aimbot.user.js
 
-let server = false;
-GM.getValue('server', 'vocadb.net').then((value) => {
-	server = value;
-});
-
+let server = await GM.getValue('server', 'vocadb.net');
 let running = false;
 
 // domains:

@@ -211,8 +211,9 @@ function scan_stop() {
 	running = false;
 }
 
-GM.registerMenuCommand('Change server from ' + server, function() {
-	GM.setValue('server', prompt('Change server from ' + server + ' to:', server));
+GM.registerMenuCommand('Change server…', function() {
+	server = prompt('Change server from ' + server + ' to:', server);
+	GM.setValue('server', server);
 });
 
 GM.registerMenuCommand('Start scanning', function() {

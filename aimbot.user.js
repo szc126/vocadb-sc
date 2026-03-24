@@ -140,7 +140,9 @@ async function process_urls(service) {
 		if (song_entry) {
 			a.dataset.vocadbSongEntryId = song_entry.id;
 		}
+		button.scrollIntoView(false);
 	}
+
 	scan_stop();
 }
 

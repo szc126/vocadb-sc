@@ -301,6 +301,8 @@ def load_metadata_album(album_id):
 		elif weblink['url'].startswith('https://music.youtube.com/browse/'):
 			infos = load_metadata_ytdl([weblink['url']])
 			infos = load_metadata_ytdl([infos[0]['url']])
+		elif 'bandcamp.com/track/' in weblink['url']: # XXX: singles are not playlists. https://vocadb.net/Al/41504
+			continue
 		elif 'Bandcamp' in weblink['description']: # relying on `Description`, to include custom domains
 			infos = load_metadata_ytdl([weblink['url']])
 		#elif weblink['url'].startswith('https://soundcloud.com/'):

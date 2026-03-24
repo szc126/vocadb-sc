@@ -1,7 +1,7 @@
 // ==UserScript==
 // @namespace   szc
 // @name        VocaDB aimbot 2024
-// @version     2026-03-11
+// @version     2026-03-24
 // @author      u126
 // @description for extreme gamers only
 // @homepageURL https://github.com/szc126/vocadb-sc
@@ -192,7 +192,9 @@ function create_song_button(url, song_entry) {
 
 function scan_start(service) {
 	if (running) {
-		// do not concurrently run twice
+		GM.notification({
+			text: 'Scanning is already in progress.',
+		});
 		return;
 	}
 

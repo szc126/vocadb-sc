@@ -115,9 +115,6 @@ def login() -> bool:
 		raise LookupError(f'Could not find the {SC.server} machine in .netrc')
 
 	print(f'Logging in to {colorama.Fore.CYAN}{SC.server}')
-	_ = session.get(
-		f'{SC.h_server}/api/antiforgery/token'
-	)
 	request = session.post(
 		f'{SC.h_server}/api/users/login',
 		json = {
@@ -125,7 +122,6 @@ def login() -> bool:
 			'password': netrc_auth[2],
 		},
 		headers = {
-			'requestVerificationToken': session.cookies.get_dict()['XSRF-TOKEN'],
 			'Origin': 'https://vocadb.net', # XXX: hey is it letting me write "origin vocadb" for all domains?
 		}
 	)
@@ -682,15 +678,9 @@ def register_videos(infos_working) -> None:
 				else:
 					entry_data_modified['updateNotes'] = f'[sc] Add {pv_type}: {info["title"]}'
 
-				_ = session.get(
-					f'{SC.h_server}/api/antiforgery/token'
-				)
 				# undocumented api
 				request_save = session.post(
 					f'{SC.h_server}/api/songs/{song_id}',
-					headers = {
-						'requestVerificationToken': session.cookies.get_dict()['XSRF-TOKEN'],
-					},
 					files = {
 						'contract': (None, json.dumps(entry_data_modified))
 					},

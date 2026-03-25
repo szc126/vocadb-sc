@@ -121,9 +121,6 @@ def login() -> bool:
 			'userName': netrc_auth[0],
 			'password': netrc_auth[2],
 		},
-		headers = {
-			'Origin': 'https://vocadb.net', # XXX: hey is it letting me write "origin vocadb" for all domains?
-		}
 	)
 
 	if request.status_code != 204:

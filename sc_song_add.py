@@ -428,7 +428,7 @@ def lookup_videos(infos, pattern_title = None):
 			}
 			# for debug:
 			#print('Context: ' + match['context'])
-			if re.search(r'ニコ|転載|より|轉載|出處|bilibili', match.group('context')):
+			if re.search(r'ニコ|転載|より|轉載|出處', match.group('context')):
 				# prioritize "original URL:" links
 				# XXX: https://utaitedb.net/S/2655 reprint where 本家 refers to VOCALOID original upload instead of utaite original upload
 				found_url_infos.insert(0, found_url_info)

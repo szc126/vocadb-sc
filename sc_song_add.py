@@ -420,7 +420,7 @@ def lookup_videos(infos, pattern_title = None):
 		# XXX: or the original video description was copy-and-pasted, without a link to the actual original video. めんどくせい
 		found_url_infos = []
 		# `\b` is not appropriate for CJK like 'ニコ動sm9'
-		for match in re.finditer(r'(?P<context>.{,10})(?P<id>https?://(?:www\.|)nicovideo\.jp/watch/[sn]m[0-9]+|\b[sn]m[0-9]+|(?<=[^A-Za-z])[sn]m[0-9]+)', info['description']):
+		for match in re.finditer(r'(?P<context>.{,50})(?P<id>https?://(?:www\.|)nicovideo\.jp/watch/[sn]m[0-9]+|\b[sn]m[0-9]+|(?<=[^A-Za-z])[sn]m[0-9]+)', info['description'], flags = re.S):
 			found_url_info = {
 				'title': info['title'],
 				'webpage_url': (not match['id'].startswith('http') and 'https://www.nicovideo.jp/watch/' or '') + match['id'],
@@ -433,7 +433,7 @@ def lookup_videos(infos, pattern_title = None):
 				found_url_infos.insert(0, found_url_info)
 			else:
 				found_url_infos.append(found_url_info)
-		for match in re.finditer(r'(?P<context>.{,10})(?P<id>https?://(?:www\.|)bilibili\.(?:com|tv)/video/(av[0-9]+|BV[A-Za-z0-9]+)|\bav[0-9]+|BV[A-Za-z0-9]{12})', info['description']):
+		for match in re.finditer(r'(?P<context>.{,50})(?P<id>https?://(?:www\.|)bilibili\.(?:com|tv)/video/(av[0-9]+|BV[A-Za-z0-9]+)|\bav[0-9]+|BV[A-Za-z0-9]{12})', info['description'], flags = re.S):
 			found_url_info = {
 				'title': info['title'],
 				'webpage_url': (not match['id'].startswith('http') and 'https://www.bilibili.com/video/' or '') + match['id'].replace('bilibili.tv', 'bilibili.com'),

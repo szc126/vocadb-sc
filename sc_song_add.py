@@ -424,12 +424,13 @@ def lookup_videos(infos, pattern_title = None):
 			found_url_info = {
 				'title': info['title'],
 				'webpage_url': (not match['id'].startswith('http') and 'https://www.nicovideo.jp/watch/' or '') + match['id'],
+				'found_url_location': (match.start(), match.end())
 			}
+			# for debug:
+			#print('Context: ' + match['context'])
 			if re.search(r'ニコ|転載|より|轉載|出處|bilibili', match.group('context')):
 				# prioritize "original URL:" links
 				# XXX: https://utaitedb.net/S/2655 reprint where 本家 refers to VOCALOID original upload instead of utaite original upload
-				# for debug:
-				#print('Context: ' + match['context'])
 				found_url_infos.insert(0, found_url_info)
 			else:
 				found_url_infos.append(found_url_info)
@@ -437,11 +438,12 @@ def lookup_videos(infos, pattern_title = None):
 			found_url_info = {
 				'title': info['title'],
 				'webpage_url': (not match['id'].startswith('http') and 'https://www.bilibili.com/video/' or '') + match['id'].replace('bilibili.tv', 'bilibili.com'),
+				'found_url_location': (match.start(), match.end())
 			}
+			# for debug:
+			#print('Context: ' + match['context'])
 			if re.search(r'bilibili|轉載|出處', match.group('context')):
 				# prioritize "original URL:" links
-				# for debug:
-				#print('Context: ' + match['context'])
 				found_url_infos.insert(0, found_url_info)
 			else:
 				found_url_infos.append(found_url_info)
@@ -499,11 +501,10 @@ def register_videos(infos_working) -> None:
 		print()
 		print(f'{colorama.Fore.YELLOW}{i_infos} / {len(infos_working)}')
 		if found_url_info:
-			print(pretty_ytdl_info(info)
-				.replace(found_url_info['webpage_url'], colorama.Fore.GREEN + found_url_info['webpage_url'] + ' \U0001f517' + colorama.Fore.BLUE)
-			)
-		else:
-			print(pretty_ytdl_info(info))
+			start = found_url_info['found_url_location'][0]
+			end = found_url_info['found_url_location'][1]
+			info['description'] = info['description'][:start] + colorama.Fore.GREEN + info['description'][start:end] + ' \U0001f517' + colorama.Fore.BLUE + info['description'][end:]
+		print(pretty_ytdl_info(info))
 
 		found_title_by_vocadb = request.json()['title']
 		matches = request.json()['matches']
@@ -754,7 +755,7 @@ def pretty_ytdl_info(info):
 		colorama.Fore.BLUE + webpage_url,
 		(
 			colorama.Fore.RESET + ' ┏━━' + '\n' +
-			colorama.Fore.RESET + colorama.Fore.BLUE + description.replace('\n', colorama.Fore.RESET + '\n' + colorama.Fore.BLUE) + '\n' +
+			colorama.Fore.RESET + colorama.Fore.BLUE + description + '\n' +
 			colorama.Fore.RESET + ' ┗━━'
 		) if description else (
 			''

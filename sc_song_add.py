@@ -818,14 +818,14 @@ if __name__ == '__main__':
 	)
 	parser.add_argument(
 		'--server',
-		help = 'server to connect to. default: ' + SC.server,
+		help = f'server to connect to. default: {colorama.Fore.YELLOW}{SC.server}{colorama.Fore.RESET}',
 	)
 	parser.add_argument(
 		'--pv-type',
 		dest = 'pv_type',
 		type = int,
 		choices = range(1, len(SC.pv_types.list) + 1),
-		help = 'default PV type. ' + str(list(enumerate(SC.pv_types.list, start = 1))),
+		help = f'default PV type. default: {colorama.Fore.YELLOW}{SC.pv_type}{colorama.Fore.RESET}. options: {colorama.Fore.YELLOW}' + str(list(enumerate(SC.pv_types.list, start = 1))) + colorama.Fore.RESET,
 	)
 	parser.add_argument(
 		'--from',
@@ -833,51 +833,51 @@ if __name__ == '__main__':
 		# https://stackoverflow.com/q/9746838
 		dest = 'list_from',
 		type = int,
-		help = 'start from (inclusive) video N of a playlist (or channel)',
+		help = f'start from video {colorama.Fore.YELLOW}N{colorama.Fore.RESET} (inclusive)',
 	)
 	parser.add_argument(
 		'--to',
 		'-t',
 		dest = 'list_to',
 		type = int,
-		help = 'stop on (inclusive) video N of a playlist (or channel)',
+		help = f'stop on video {colorama.Fore.YELLOW}N{colorama.Fore.RESET} (inclusive)',
 	)
 	parser.add_argument(
 		'--parse',
 		'--title',
 		dest = 'pattern_title',
-		help = 'regular expression to parse a video title. accepts one capture group, which will be the title. example: /初音ミク　(.+)/ (without slash)',
+		help = f'regular expression to parse a video title. accepts one capture group, which will be used in title lookup. example: {colorama.Fore.YELLOW}(.+) feat\\. 初音ミク{colorama.Fore.RESET}',
 	)
 	parser.add_argument(
 		'--select',
 		dest = 'pattern_select',
-		help = 'regular expression to select by video title. --select has precedence over --unselect. example: /歌ってみた/ (without slash)',
+		help = f'regular expression to select videos with matching titles. --select has precedence over --unselect. example: {colorama.Fore.YELLOW}歌ってみた|うたってみた{colorama.Fore.RESET}',
 	)
 	parser.add_argument(
 		'--unselect',
 		'--deselect',
 		dest = 'pattern_unselect',
-		help = 'regular expression to unselect by video title. example: /(?i)mmd|mikumikudance|実況プレイ/ (without slash)',
+		help = f'regular expression to unselect videos with matching titles. example: {colorama.Fore.YELLOW}(?i)mmd|mikumikudance|実況プレイ{colorama.Fore.RESET}',
 	)
 	parser.add_argument(
 		'urls',
 		nargs = '*',
 		metavar = 'URL',
-		help = 'URL(s) to process',
+		help = 'URL(s) to lookup',
 		# use '--' before an URL that begins with a hyphen
 		# https://docs.python.org/dev/library/argparse.html#arguments-containing
 	)
 	parser.add_argument(
 		'--ytbulk',
 		#type = argparse.FileType('r'),
-		help = 'bulk_metadata.zip to process, from https://github.com/mattwright324/youtube-metadata',
+		help = 'zip export from https://github.com/mattwright324/youtube-metadata containing metadata of videos to lookup',
 	)
 	parser.add_argument(
 		'--albumid',
 		'--alid',
 		dest = 'album_id',
-		metavar = 'albumID',
-		help = 'VocaDB album ID (or URL); playlist URLs will be located on its entry for usage',
+		metavar = 'ID',
+		help = f'album ID (or full URL); playlists in external links will be retrieved and matched 1:1 to the track list. example: {colorama.Fore.YELLOW}6197{colorama.Fore.RESET} or {colorama.Fore.YELLOW}https://vocadb.net/Al/6197{colorama.Fore.RESET}',
 	)
 	args = parser.parse_args()
 

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @namespace   szc
 // @name        VocaDB tag presets
-// @version     2025-06-09
+// @version     2026-05-22
 // @author      u126
 // @description buttons to add tags with one click
 // @homepageURL https://github.com/szc126/vocadb-sc
@@ -26,61 +26,61 @@ let tag_presets = [
 	['混', 'self-remix'],
 	['短', 'short version'],
 	['增', 'extended version'],
-	['耳ｺ', '耳コピ'],
+	['重', 'remastered cover'], // 重製
 
 	['跨', 'unsupported language'],
 	['譯', 'changed language'],
 	['改', 'changed lyrics'],
 	['增', 'additional lyrics'],
-	['ﾊﾟﾛ', 'parody'],
+	['パ', 'parody'],
 
-	['淸', 'a cappella'], // 清唱
-	['純', 'no lyrics'], // 純音樂
 	['喋', 'speech vocals'],
 	['詠', 'poemloid'],
-	['拾', 'lyrics from poetry'],
+	['清', 'a cappella'], // 清唱
 
+	['詰', 'multiple song PV'],
 	['晒', 'editor PV'],
-	['utau📥️', 'UTAU voicebank release'],
+
+	['u📥️', 'UTAU voicebank release'],
 	['ﾃﾞﾓ', 'voicebank demo'],
 	['β', 'beta voicebank'],
 	['升', 'upgraded voicebank'],
-	['tri', 'trial voicebank'],
-	['煎', 'remastered cover'], // 二番煎じ
-	['unc', 'unconfirmed vocalists'],
-	['c', 'confirmed original bank'],
+	['驗', 'trial voicebank'], // 體驗版
 
 	['mp3📥️', 'free'],
 	['ｵｹ', 'karaoke available'],
 	['ust', 'UST available'],
 	['vsq', 'VSQ available'],
 
-	['svp📥️', 'SVP available'],
-	['svﾗｲﾄ', 'Synthesizer V lite version voice'],
-	['sv跨語言', 'Synthesizer V AI cross-lingual singing synthesis'],
-
-	['似', 'original art imitation'],
-	['官方', 'official art PV'],
-	['AI', 'AI generated art'],
+	['似🖼️', 'original art imitation'],
+	['官', 'official art PV'],
+	['AI', 'AI-generated art'],
 	['拾', 'uncredited art PV'],
+	['👥', 'multiple illustrators'],
 
-	['MMD'],
+	['mmd'],
 	['手書', '手書きPV'],
-	['ｱﾆ', '2D animated PV'],
-	['文字', '文字PV'],
+	['2d', '2D animated PV'],
+	['文', '文字PV'],
 
-	['🏫', '兒歌'],
-	['🪖', '軍歌'],
-	['講', '講座'],
-	['詰', 'multiple song PV'],
-	['調', 'good tuning'],
-	['雙', 'bilingual'],
+	['双', 'bilingual'],
 	['多', 'polylingual'],
 	['饒', 'rapping'],
+	['双人', 'duet'],
+	['樂曲', 'no lyrics'],
 
-	['ﾋﾟｱﾉ', 'piano'],
+	['🎹', 'piano'],
 	['ｱｺｷﾞ', 'acoustic guitar'],
-	['ｴﾚｷ', 'electric guitar'],
+	['🎸', 'electric guitar'],
+
+	['耳ｺ', '耳コピ'],
+	['arr.OoS', 'instrumental from out of scope'],
+	['orig.unk', 'original version unknown'],
+
+	['unk.voc', 'unconfirmed vocalists'],
+	['旧', 'confirmed original bank'],
+	['🕴️', 'limited artist information'],
+	['🌧️', 'failing to add embed'],
 ];
 GM.getValue('additional_tag_presets', []).then((value) => {
 	tag_presets = tag_presets.concat(value);

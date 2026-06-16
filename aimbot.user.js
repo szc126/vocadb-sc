@@ -1,7 +1,7 @@
 // ==UserScript==
 // @namespace   szc
 // @name        VocaDB aimbot 2024
-// @version     2026-03-24
+// @version     2026-05-05
 // @author      u126
 // @description for extreme gamers only
 // @homepageURL https://github.com/szc126/vocadb-sc
@@ -36,12 +36,10 @@ const services = {
 		domains: ['www.nicovideo.jp'],
 		aSelectors: [
 			'a.NC-MediaObject-contents', // user
-			'.itemTitle a', // search, tag
-			'a[data-decoration-video-id]', // watch recommended sidebar
+			'[data-decoration-video-id] .pos_relative a', // search, tag, watch recommended sidebar
 		],
 		aParent: function(a) {
 			if (a.classList.contains('NC-MediaObject-contents')) return a.parentNode;
-			if (a.hasAttribute('data-decoration-video-id')) return a;
 			return a.parentNode.parentNode;
 		},
 	},

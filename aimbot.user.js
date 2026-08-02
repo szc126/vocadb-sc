@@ -1,7 +1,7 @@
 // ==UserScript==
 // @namespace   szc
 // @name        VocaDB aimbot 2024
-// @version     2026-05-05
+// @version     2026-08-02
 // @author      u126
 // @description for extreme gamers only
 // @homepageURL https://github.com/szc126/vocadb-sc
@@ -107,14 +107,9 @@ async function process_urls(service) {
 		let url = a.href;
 
 		// when running the script multiple times in one session
-		// do not look up our own links
-		if (url.indexOf(server) > 0) {
-			continue;
-		};
-
-		// when running the script multiple times in one session
 		// skip songs that we have already found
-		if ('vocadbSongEntryId' in a.dataset) {
+		// and do not look up our own links
+		if ('aimbot' in a.dataset) {
 			continue;
 		}
 
@@ -122,8 +117,6 @@ async function process_urls(service) {
 		if (url.indexOf('api.nicoad.nicovideo.jp') > 0) {
 			continue;
 		};
-
-		// TODO: destroy the old "create an entry link" when running the script again?
 
 		// normalize
 		url = url.replace('nicolog.jp', 'nicovideo.jp');
@@ -136,7 +129,8 @@ async function process_urls(service) {
 		const button = create_song_button(url, song_entry);
 		services[service].aParent(a).appendChild(button);
 		if (song_entry) {
-			a.dataset.vocadbSongEntryId = song_entry.id;
+			a.dataset.aimbot = song_entry.id;
+		}
 		}
 		button.scrollIntoView(false);
 	}
@@ -183,11 +177,17 @@ function create_song_button(url, song_entry) {
 		[song_entry.name, song_entry.songType, song_entry.artistString, song_entry.tags.map(tag => tag.tag.name).join(', ')].join('\n') :
 		'';
 	a.target = '_blank'; // TODO: also make the video <a> open in a new tab?
+	a.dataset.aimbot = !!song_entry;
 
 	const text = document.createTextNode(server);
 	a.appendChild(text);
 
 	return a;
+}
+
+function destroy_actionable_song_buttons() {
+	const as = document.querySelectorAll('a[data-aimbot=false]');
+	as.forEach(a => a.remove());
 }
 
 function scan_start(service) {
@@ -202,6 +202,7 @@ function scan_start(service) {
 		text: 'Scanning…',
 	});
 	running = true;
+	destroy_actionable_song_buttons();
 	process_urls(service);
 }
 

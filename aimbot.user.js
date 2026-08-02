@@ -122,7 +122,7 @@ async function process_urls(service) {
 		url = url.replace('nicolog.jp', 'nicovideo.jp');
 		// remove tracking garbage
 		// to aid caching
-		url = url.replace(/\?spm_id=.+$/, ''); // bilibili
+		url = url.replace(/\?spm_id.+$/, ''); // bilibili
 		url = url.replace(/&pp=.+$/, ''); // YouTube
 
 		const song_entry = await get_song_entry(url);

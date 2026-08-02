@@ -401,6 +401,13 @@ def lookup_videos(infos, pattern_title = None):
 		pv_added = False
 
 		request = lookup_url(info, title = found_title)
+		try:
+			request.json()
+		except json.decoder.JSONDecodeError as e:
+			# VocaDB is being eaten alive by bots or something
+			print(e)
+			cache_lookup_url.pop(lookup_url.__cache_key__(info, title = found_title))
+			continue
 		for entry in request.json()['matches']:
 			if entry['matchProperty'] == 'PV':
 				pv_added = True

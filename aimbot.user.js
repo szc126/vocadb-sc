@@ -131,8 +131,11 @@ async function process_urls(service) {
 		if (song_entry) {
 			a.dataset.aimbot = song_entry.id;
 		}
+		// scroll into view
+		// but don't disturb the user
+		if (running) {
+			button.scrollIntoView(false);
 		}
-		button.scrollIntoView(false);
 	}
 
 	scan_stop();

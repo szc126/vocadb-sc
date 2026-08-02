@@ -1,7 +1,7 @@
 // ==UserScript==
 // @namespace   szc
 // @name        VocaDB tag presets
-// @version     2026-05-22
+// @version     2026-07-20
 // @author      u126
 // @description buttons to add tags with one click
 // @homepageURL https://github.com/szc126/vocadb-sc
@@ -44,7 +44,7 @@ let tag_presets = [
 	['u📥️', 'UTAU voicebank release'],
 	['ﾃﾞﾓ', 'voicebank demo'],
 	['β', 'beta voicebank'],
-	['升', 'upgraded voicebank'],
+	['升', 'upgraded voicebank cover'],
 	['驗', 'trial voicebank'], // 體驗版
 
 	['mp3📥️', 'free'],

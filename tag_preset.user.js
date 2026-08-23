@@ -1,7 +1,7 @@
 // ==UserScript==
 // @namespace   szc
 // @name        VocaDB tag presets
-// @version     2026-07-20
+// @version     2026-08-23
 // @author      u126
 // @description buttons to add tags with one click
 // @homepageURL https://github.com/szc126/vocadb-sc
@@ -58,7 +58,7 @@ let tag_presets = [
 	['拾', 'uncredited art PV'],
 	['👥', 'multiple illustrators'],
 
-	['mmd'],
+	['mmd', 'MMD'],
 	['手書', '手書きPV'],
 	['2d', '2D animated PV'],
 	['文', '文字PV'],

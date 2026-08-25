@@ -774,6 +774,8 @@ def pretty_ytdl_info(info):
 
 def pretty_duration(seconds):
 	'''Reformat a duration (seconds) as M:SS.'''
+	if type(seconds) is str and 'H' in seconds:
+		return seconds.replace('H', ':').replace('M', ':').replace('S', '')
 
 	return str(int(seconds) // 60) + ':' + str(int(seconds) % 60).zfill(2)
 

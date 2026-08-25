@@ -858,7 +858,7 @@ if __name__ == '__main__':
 		'--parse',
 		'--title',
 		dest = 'pattern_title',
-		help = f'regular expression to parse a video title. accepts one capture group, which will be used in title lookup. example: {colorama.Fore.YELLOW}(.+) feat\\. 初音ミク{colorama.Fore.RESET}',
+		help = f'regular expression to parse a video title. accepts one capture group, which will be used in title lookup. example: {colorama.Fore.YELLOW}(.+) feat{colorama.Fore.RESET}',
 	)
 	parser.add_argument(
 		'--select',

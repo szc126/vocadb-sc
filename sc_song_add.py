@@ -9,6 +9,7 @@ TODO:
 	- allow to search by name more than once even if successful (fixing typo, trying with a different form, ...)
 	- don't ask if the pv type is right before asking; ask for a choice 1 2 3, with a default
 	- "ignore this song permanently. forever."
+	- option to add the parsed pv name as a new song entry name
 
 COLORS:
 	- green: Good
@@ -717,7 +718,6 @@ def register_videos(infos_working) -> None:
 		print(f'{colorama.Fore.RED}Skipped URLs:')
 		for info in infos_skipped:
 			print(info['webpage_url'] + ' # ' + info['title'])
-			# TODO: option to restart immediately but with utaitedb?
 	print('----')
 	print(f'All URLs have been {colorama.Fore.GREEN}processed.')
 

@@ -718,6 +718,9 @@ def register_videos(infos_working) -> None:
 		print(f'{colorama.Fore.RED}Skipped URLs:')
 		for info in infos_skipped:
 			print(info['webpage_url'] + ' # ' + info['title'])
+		print()
+		for info in infos_skipped:
+			print('https://vocadb.net/Song/Create?pvUrl=' + info['webpage_url'] + ' # ' + info['title'])
 	print('----')
 	print(f'All URLs have been {colorama.Fore.GREEN}processed.')
 

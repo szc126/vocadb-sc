@@ -1,7 +1,7 @@
 // ==UserScript==
 // @namespace   szc
 // @name        VocaDB aimbot 2024
-// @version     2026-08-23
+// @version     2026-09-07
 // @author      u126
 // @description for extreme gamers only
 // @homepageURL https://github.com/szc126/vocadb-sc
@@ -94,7 +94,7 @@ async function process_urls(service) {
 		if (confirm('Continue scanning?')) {
 			//
 		} else {
-			scan_stop();
+			stop_scan();
 			return;
 		}
 	}
@@ -102,7 +102,7 @@ async function process_urls(service) {
 	const as = document.querySelectorAll(services[service].aSelectors);
 	for (const a of as) {
 		if (!running) {
-			scan_stop();
+			stop_scan();
 			return;
 		}
 
@@ -135,7 +135,7 @@ async function process_urls(service) {
 		}
 	}
 
-	scan_stop();
+	stop_scan();
 }
 
 async function get_song_entry(url) {
@@ -190,7 +190,8 @@ function destroy_actionable_song_buttons() {
 	as.forEach(a => a.remove());
 }
 
-function scan_start(service) {
+const ID_START_STOP_SCAN = 'start stop scan';
+function start_scan(service) {
 	if (running) {
 		GM.notification({
 			text: 'Scanning is already in progress.',
@@ -203,30 +204,35 @@ function scan_start(service) {
 	});
 	running = true;
 	destroy_actionable_song_buttons();
+	GM.registerMenuCommand('Stop scanning', stop_scan, { id: ID_START_STOP_SCAN });
+
 	process_urls(service);
 }
 
-function scan_stop() {
+function start_scan_helper() {
+	for (const service in services) {
+		const domains = services[service].domains;
+		if (domains.some(domain => window.location.href.includes(domain))) {
+			start_scan(service);
+		}
+	}
+}
+
+function stop_scan() {
 	GM.notification({
 		text: 'Done scanning.',
 	});
 	running = false;
+	GM.registerMenuCommand('Start scanning', start_scan_helper, { id: ID_START_STOP_SCAN });
 }
 
-GM.registerMenuCommand('Change server…', function() {
+const ID_CHANGE_SERVER = 'change server';
+function change_server() {
 	server = prompt('Change server from ' + server + ' to:', server);
 	GM.setValue('server', server);
-});
+	GM.registerMenuCommand('Change server from ' + server + '…', change_server, { id: ID_CHANGE_SERVER });
+}
 
-GM.registerMenuCommand('Start scanning', function() {
-	for (const service in services) {
-		const domains = services[service].domains;
-		if (domains.some(domain => window.location.href.includes(domain))) {
-			scan_start(service);
-		}
-	}
-});
+GM.registerMenuCommand('Change server from ' + server + '…', change_server, { id: ID_CHANGE_SERVER });
 
-GM.registerMenuCommand('Stop scanning', function() {
-	scan_stop();
-});
+GM.registerMenuCommand('Start scanning', start_scan_helper, { id: ID_START_STOP_SCAN });

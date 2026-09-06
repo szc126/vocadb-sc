@@ -229,7 +229,7 @@ def load_metadata_ytdl_recursive(info) -> list:
 	else:
 		return [info]
 
-def load_metadata_ytbulk(filename, pattern_select = None, pattern_unselect = None):
+def load_metadata_yt_bulk(filename, pattern_select = None, pattern_unselect = None):
 	'''
 	Load URL metadata from within a local ZIP file.
 	See https://github.com/mattwright324/youtube-metadata.
@@ -812,8 +812,8 @@ def main(args):
 	urls = args.urls
 	infos = None
 
-	if args.ytbulk:
-		infos = load_metadata_ytbulk(args.ytbulk, pattern_select = args.pattern_select, pattern_unselect = args.pattern_unselect)
+	if args.yt_bulk:
+		infos = load_metadata_yt_bulk(args.yt_bulk, pattern_select = args.pattern_select, pattern_unselect = args.pattern_unselect)
 	elif args.album_id:
 		infos = load_metadata_album(args.album_id)
 	else:
@@ -834,6 +834,7 @@ if __name__ == '__main__':
 	)
 	parser.add_argument(
 		'--pv-type',
+		'--pvtype',
 		dest = 'pv_type',
 		type = int,
 		choices = range(1, len(SC.pv_types.list) + 1),
@@ -859,6 +860,8 @@ if __name__ == '__main__':
 		'--title',
 		dest = 'pattern_title',
 		help = f'regular expression to parse a video title. accepts one capture group, which will be used in title lookup. example: {colorama.Fore.YELLOW}(.+) feat{colorama.Fore.RESET}',
+		# VocaDB default is woefully outdated
+		default = '^(?:【[^【】]+】)?(.+?)(?:feat|／|/| - |【)',
 	)
 	parser.add_argument(
 		'--select',
@@ -880,11 +883,13 @@ if __name__ == '__main__':
 		# https://docs.python.org/dev/library/argparse.html#arguments-containing
 	)
 	parser.add_argument(
+		'--yt-bulk',
 		'--ytbulk',
 		#type = argparse.FileType('r'),
 		help = 'zip export from https://github.com/mattwright324/youtube-metadata containing metadata of videos to lookup',
 	)
 	parser.add_argument(
+		'--album-id',
 		'--albumid',
 		'--alid',
 		dest = 'album_id',
